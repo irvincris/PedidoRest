@@ -1,0 +1,313 @@
+﻿
+@{
+    ViewBag.Title = "DetalleCaja";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-header">
+
+    <div class="panel-body">
+
+        <div class="row" hidden>
+
+            @*<div class="form-group col-md-6 col-lg-4 margin">
+                <div class="input-group input-group-sm mb-3">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">CAJERO:</span>
+                    </div>
+                    <select class="form-control" id="idcajero" onchange="ObtenerDetalleCaja()">
+                        <option value="0">SELECCIONAR CAJERO</option>
+                        @foreach (var item in ViewBag.ListaCajero)
+                        {
+                            <option id="select" value="@item.Id">@item.Nombre</option>
+                        }
+                    </select>
+                </div>
+                <u style="font-weight: bold; font-style: italic; color: navy ">RESUMEN DE CAJA (BS)</u>
+            </div>*@
+
+
+            <div class="form-group col-md-6 col-lg-4 margin">
+                <div class="input-group input-group-sm mb-3">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL EFECTIVO:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="totalEfectivo" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-3">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL TARJETA:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="totalTarjeta" disabled>
+                </div>
+                <u style="font-weight: bold; font-style: italic; color: navy">DETALLE CAJA (BS)</u>
+            </div>
+
+            <div class="form-group row-cols-md-6 col-lg-12">
+                @*<u style="font-weight:bold;font-style:italic">DETALLE CAJA - MONTO EXPRESADO EN BS.</u>*@
+            </div>
+        </div>
+
+
+        <div class="row" hidden>
+         
+            <div class="form-group col-md-6 col-lg-4 margin">
+                <div class="form-group row-cols-md-6 col-lg-12 margin">
+                    <u style="font-weight:bold;font-style:italic">DETALLE CAJA</u>
+                </div><br />
+                      <div class="input-group input-group-sm mb-2">
+                          <div class="input-group-append">
+                              <span class="input-group-text" style="font-weight:bold">USUARIO:</span>
+                          </div>
+                          <input type="text" class="form-control" style="text-align:center" value="@Session["usuario"]" disabled>
+                          <input type="text" class="form-control" id="idalmacen" value="@Session["idalmacen"]">
+                      </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">VENTAS AL CONTADO:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="ventaContado" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">VENTAS AL CREDITO:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="ventaCredito" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">A CUENTA:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="aCuenta" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">SALDO:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="saldo" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="totalVenta" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">CORTESIAS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="cortesia" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">ANTICIPOS POR PEDIDOS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="anticipoPedido" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">MONTO INICIAL CAJA:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="montoInicial" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">EFECTIVO:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="efectivo" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TARJETA:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="tarjeta" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">CUENTA CORRIENTE:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="cuentaCorriente" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TRANSFERENCIA:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="transferencia" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">PAGO QR:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="pagoqr" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL ABONOS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="totalAbono" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">ABONOS VENTAS DIAS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="ventaDia" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">ABONOS VENTAS PASADAS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="ventaPasada" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">OTROS INGRESOS:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="otrosIngresos" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">GASTOS (-):</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="gastos" disabled>
+                </div>
+
+                <hr color="green" />
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL A RENDIR:</span>
+                    </div>
+                    <input type="text" class="form-control estilo" id="totalRendir" disabled>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="row">
+
+            <div class="form-group col-md-6 col-lg-4 margin">
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">USUARIO:</span>
+                    </div>
+                    <input type="text" class="form-control" style="text-align:center" id="usuario" value="@Session["usuario"]" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">SALDO EN CAJA BS:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="saldoCaja" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">ENTREGADO BS:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="entregadobs" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">ENTREGADO $:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="entregadoDolar" value="0"> =
+                    <input type="text" class="form-control alinearRight" id="entregadoDolarBs" value="0" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL TARJETAS:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="totalTarjetaEntregado" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">C. CORRIENTE:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="cCorriente" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TRANSFERENCIAS:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="transferenciaEntregado" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">PAGO QR:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="pagoQrEntregado" value="0" onkeypress="return isNumberKey(event)">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">TOTAL ENTREGADO BS:</span>
+                    </div>
+                    <input type="text" class="form-control alinearRight" id="totalEntregado" value="0" disabled>
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">OBSERVACION:</span>
+                    </div>
+                    <input type="text" class="form-control" id="observacion" autocomplete="off">
+                </div>
+
+                <div class="input-group input-group-sm mb-2">
+                    <button type="button" class="btn btn-success" onclick="GuardarCierre()"><span class="fa fa-check"> </span>  Guardar </button>
+                </div>
+                
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style type="text/css">
+    .estilo {
+        text-align: right;
+    }
+
+    .TamanoLetra {
+        font-size: 10px;
+    }
+
+    .margin {
+        margin: 0 auto;
+    }
+
+    .alinearRight {
+        text-align: right;
+    }
+
+</style>
+
+
+@Html.Partial("~/Views/ScriptCierreCaja.cshtml")
+

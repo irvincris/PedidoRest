@@ -1,0 +1,66 @@
+﻿
+@{
+    ViewBag.Title = "InicioDia";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="modal fade" id="ModalInicioDia" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-lg" style="max-width:35%">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#28405e">
+                <h5 class="modal-title" style="background: #28405e; color: white">INICIO DIA </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:red"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row">
+                    <div class="form-group row-cols-md-2 col-lg-10">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-append">
+                                <span class="input-group-text" style="font-weight:bold">ALMACEN:</span>
+                            </div>
+                            <input type="text" class="form-control form-control-sm" value="@Session["NombreAlmacen"]" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group row-cols-md-2 col-lg-10">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-append">
+                                <span class="input-group-text" style="font-weight:bold">FECHA INICIO:</span>
+                            </div>
+                            <input type="text" class="form-control form-control-sm" id="fechaInicio" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group row-cols-md-2 col-lg-10">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-append">
+                                <span class="input-group-text" style="font-weight:bold">FECHA APERTURA:</span>
+                            </div>
+                            <input type="text" class="form-control form-control-sm" id="fechaApertura" disabled>
+                        </div>
+                    </div>
+
+                    <div class="form-group row-cols-md-2 col-lg-10">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-append">
+                                <span class="input-group-text" style="font-weight:bold">MONTO INICIAL:</span>
+                            </div>
+                            <input type="text" class="form-control form-control-sm" value="0" id="montoInicial" onkeypress="return isNumberKey(event)">
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" id="guardarInicio" onclick="GuardarInicio()"><span class="fa fa-save"> </span>  Guardar </button>
+                <button type="button" class="btn btn-danger" data-dismiss="modal"><span class="fa fa-times"></span> Salir </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@Html.Partial("~/Views/ScriptInicioDia.cshtml")

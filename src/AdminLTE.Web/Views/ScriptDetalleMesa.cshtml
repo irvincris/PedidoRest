@@ -1,0 +1,187 @@
+﻿<script>
+
+    self.onload = function () {
+        CargarMesa();
+        $("#DatoPedidoMenu").hide();
+        CargarCuentasTemporales();
+    }
+
+
+    function CargarMesa() {
+        verificarSesion();
+        $('#mesa').remove();
+
+        var dato = '<div class="form-group" id="mesa"></div >';
+        $('#CampoMesa').append(dato);
+
+        var idalmacen = $('#idalmacen').val();
+        var idplano = $('#idplano').val();
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { idalmacen, idplano }, async: false,
+            url: RutaURL('/DetalleMesa/ListaMesa'),
+            success: function (data) {
+                var user, hora, monto;
+
+                //$.each(data, function () {
+
+                //    user = "Mesa vacía";
+                //    hora = "";
+                //    monto = "";
+                //    if (this.Cod_venta > 0) {
+                //        user = this.Login;
+                //        hora = this.hora;
+                //        monto = parseFloat(this.Monto).toFixed(2) + ' Bs';
+                //    }
+
+                //    var descripcion = 'Mesa: ' + this.descripcion + '<br>' + user + '<br>' + hora + '<br>' + monto;
+                //    var dato = '<button type="button" style="background:' + this.Color + ';width:220px; height: 150px; margin:5px" id="button" class="btn btn-default btn-lg estilo margen" onclick="ProductoVenta(' + this.Cod_venta + ',\'' + this.Login + '\',\'' + this.Cod_mesa + '\',\'' + this.Cod_Usua + '\')"> ' + descripcion + ' </button> ';
+
+                //    $('#mesa').append(dato);
+                //})
+
+
+                let html = ''; 
+
+                $.each(data, function () {
+                    user = "Mesa vacía";
+                    hora = "";
+                    monto = "";
+
+                    if (this.Cod_venta > 0) {
+                        user = this.Login;
+                        hora = this.hora;
+                        monto = parseFloat(this.Monto).toFixed(2) + ' Bs';
+                    }
+
+                    const descripcion = `Mesa: ${this.descripcion}<br>${user}<br>${hora}<br>${monto}`;
+                    html += '<button type="button" style="background:' + this.Color + ';width:220px; height: 150px; margin:5px" class="btn btn-default btn-lg estilo margen" onclick="ProductoVenta(' + this.Cod_venta + ',\'' + this.Login + '\',\'' + this.Cod_mesa + '\',\'' + this.Cod_Usua + '\')"> ' + descripcion + ' </button> ';
+                });
+                // Hacemos una sola inserción al DOM
+                $('#mesa').html(html);
+
+
+            }
+        });
+
+        CargarCuentasTemporales();
+    }
+
+    function ProductoVenta(codVenta, login, codMesa, codUsua) {
+        var usuario = $('#idusuario').val().trim();
+        var Codusuario = $('#Codusuario').val().trim();
+
+        var estado = true;
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codMesa }, async: false,
+            url: RutaURL('/DetalleMesa/VerificarEstadoMesa'),
+            success: function (data) {
+                if (data.data != codVenta) {
+                    //swal("", "Se actualizó la mesa", "warning");
+                    CargarMesa();
+                    estado = false;
+                }
+            }
+        });
+
+        if (estado) {
+
+            if (codVenta > 0 && $("#UsoCodigoUsuario").val()==false) {
+
+                    if (Codusuario == codUsua) {
+                        window.location.href = '@Url.Action("Index", "Venta")?m=' + codMesa + '&c=0';
+                        $("#DatoPedidoMenu").show();
+                    } else {
+                        swal("","La mesa está siendo atendida por otro mesero","warning");
+                    }
+
+            } else {
+                 window.location.href = '@Url.Action("Index", "Venta")?&m=' + codMesa + '&c=0';
+            }
+
+        }
+
+    }
+
+    function InicioMesa() {
+        CargarMesa();
+    }
+
+
+    function CargarCuentasTemporales() {
+        var idusuario = $('#Codusuario').val();
+        $('#cuentas').remove();
+        $('#titCuenta').remove();
+
+        var dato = '<div class="form-group" id="cuentas"></div >';
+        $('#OpcionCuentas').append(dato);
+
+        var titulo = '<u style="font-weight:bold;font-style:italic" id="titCuenta">CUENTAS TEMPORALES:</u>';
+        $('#lblCuenta').append(titulo);
+
+        var idalmacen = $('#idalmacen').val();
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { idalmacen, idusuario }, async: false,
+            url: RutaURL('/DetalleMesa/ObtenerCuentas'),
+            success: function (data) {
+
+                $.each(data, function () {
+                    var dato = '<button type="button" style="background:' + this.Color + ';width:220px; height: 150px; margin:5px;" class="btn btn-default btn-lg estilo margen"  onclick="CuentaVenta(' + this.Cod_venta + ',\'' + this.CodCuent + '\')"> ' + this.descripcion + ' </button> ';
+                    $('#cuentas').append(dato);
+
+                })
+            }
+        });
+
+    }
+
+    function NuevaCuenta() {
+        $("#ModalNuevaCuenta").modal("show");
+    }
+
+    function GuardarCuentaTemporal() {
+        var Descripcion = $("#descripcion").val();
+        var idalmacen = $('#idalmacen').val();
+        var idusuario = $('#Codusuario').val();
+
+        if (Descripcion=="") {
+            swal("","Introducir descripción","warning");
+        } else {
+
+            $.ajax({
+                type: "POST", dataType: 'json', data: { Descripcion, idalmacen, idusuario }, async: false,
+                url: RutaURL('/DetalleMesa/GuardarCuentaTemporal'),
+                success: function (data) {
+                    if (data.data==0) {
+                        swal("","Error en el registro","warning");
+                    } else {
+                        swal("", "Registro guardado", "success");
+                        CargarCuentasTemporales();
+                    }
+                    $("#ModalNuevaCuenta").modal("hide");
+                }
+            });
+
+        }
+    }
+
+    function CuentaVenta(codVenta, CodCuent) {
+
+           if (codVenta > 0) {
+
+               window.location.href = '@Url.Action("Index", "Venta")?m=0' + '&c=' + CodCuent;
+                $("#DatoPedidoMenu").show();
+
+            } else {
+               window.location.href = '@Url.Action("Index", "Venta")?m=0' + '&c=' + CodCuent;
+            }
+
+    }
+
+    function mayus(e) {
+        e.value = e.value.toUpperCase();
+    }
+
+</script>

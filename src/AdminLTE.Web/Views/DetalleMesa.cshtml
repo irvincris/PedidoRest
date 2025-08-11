@@ -1,0 +1,164 @@
+﻿
+@{
+    ViewBag.Title = "Detalle Mesa";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-header">
+
+    <div class="panel-body">
+
+        @*<div class="card border border-info" style="text-align:center">
+
+            <div class="card-body">
+                <div class="form-group mb-3">
+                    <div id="CampoMesa" style="text-align:left">
+                    </div>
+                </div>
+            </div>
+
+        </div>*@
+
+        <div class="row" id="DatoMesa">
+
+            <div class="form-group col-md-4 col-lg-6" hidden>
+                <input type="text" class="form-control" id="idalmacen" value="@Session["idalmacen"]">
+                <input type="text" class="form-control" id="idusuario" value="@Session["usuario"]">
+                <input type="text" class="form-control" id="Codusuario" value="@Session["CodUsuario"]">
+                <input type="text" class="form-control" id="UsoCodigoUsuario" value="@Session["UsoCodigoUsuario"]">
+            </div>
+
+            <div class="form-group row-cols-md-2 col-lg-4">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-append">
+                        <span class="input-group-text" style="font-weight:bold">PLANO:</span>
+                    </div>
+                    <select class="form-control" id="idplano" onchange="CargarMesa()">
+                        @foreach (var item in ViewBag.ListaPlano)
+                        {
+                            <option id="select" value="@item.Id">@item.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            @*<div class="form-group row-cols-md-2 col-lg-5">
+                <button type="button" class="btn btn-success btn-sm" style="border-color:black; background-color:#1a585a" onclick="CargarMesa()"><span class="far fa-update"></span>  Actualizar Mesas </button>
+            </div>*@
+
+        </div>
+
+        <div class="row">
+
+            <div class="form-group mb-3 CentrarDato" style="text-align:center">
+                <div id="CampoMesa">
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <div class="row">
+            <div class="form-group col-md-4 col-lg-12">
+                <div id="lblCuenta">
+
+                </div>
+            </div>
+
+            <div class="form-group col-md-4 col-lg-12">
+                <button type="button" class="btn btn-danger btn-sm" style="border-color: black" onclick="NuevaCuenta()"><span class="fa-solid fa-plus"></span>  Nueva Cuenta </button>
+            </div>
+
+            <div class="form-group CentrarDato">
+                <div id="OpcionCuentas">
+
+                </div>
+            </div>
+
+        </div>
+
+
+        <div id="DatoProductoVenta" hidden>
+
+            <div class="col-md-12">
+
+                <div class="col-md-6">
+                </div>
+                <div class="col-md-6">
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+
+
+<div class="modal fade" id="ModalNuevaCuenta">
+    <div class="modal-dialog modal-lg AlinearModal" style="margin:auto">
+        <div class="modal-content">
+            <div class="modal-header" style="background:#28405e">
+                <h5 class="modal-title" style="background: #28405e; color: white">Cuenta Temporal </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color:red"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row">
+
+                    <div class="form-group row-cols-md-2 col-lg-12 mb-1">
+                        <label style="font-weight:bold"> Descripción:</label>
+                    </div>
+                  
+                    <div class="form-group row-cols-md-2 col-lg-6">                     
+                        <input type="text" class="form-control form-control-sm" id="descripcion" onkeyup="mayus(this)" autocomplete="off">
+                     
+                    </div>
+
+                </div>
+
+                <div class="row">
+                    <div class="form-group row-cols-md-2 col-lg-3">
+                        <button type="button" id="btnGuardarParte" class="btn btn-danger btn-sm" onclick="GuardarCuentaTemporal()"><span class="fa fa-check"></span>  Aceptar </button>
+                        <button type="button" class="btn btn-danger btn-sm" style="background-color:#de2424" data-dismiss="modal"><span class="fa fa-times"></span> Salir </button>
+                    </div>             
+                </div>
+
+            </div>
+
+            @*<div class="modal-footer" >
+                <button type="button" id="btnGuardarParte" class="btn btn-danger btn-sm" onclick="GuardarCuentaTemporal()"><span class="fa fa-check"></span>  Aceptar </button>
+                <button type="button" class="btn btn-danger btn-sm" style="background-color:#de2424" data-dismiss="modal"><span class="fa fa-times"></span> Salir </button>
+            </div>*@
+
+        </div>
+    </div>
+</div>
+
+<style type="text/css">
+   @@media (max-width:450px)  {
+        .CentrarDato {
+            text-align: center;
+        }
+        .AlinearModal {
+            max-width:90%;
+        }
+    }
+
+    @@media (min-width:450px) {
+        .AlinearModal {
+            max-width: 60%;
+        }
+    }
+
+    button:hover {
+        background-color: #2980b9;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        transform: scale(1.01);
+    }
+
+</style>
+
+@Html.Partial("~/Views/ScriptDetalleMesa.cshtml")

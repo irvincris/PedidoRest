@@ -1,0 +1,106 @@
+﻿<script>
+
+    function Iniciar() {
+        var usuario, password, idalmacen;
+        usuario = $('#usuario').val();
+        password = $('#password').val();
+        idalmacen = $('#idalmacen').val();
+        NombreAlmacen = $("#idalmacen option:selected").text();
+
+        if (usuario == "") {
+            swal("", "Introducir usuario", "warning");
+        } else if (password == "") {
+            swal("", "Introducir contraseña", "warning");
+        } else if (idalmacen == 0) {
+            swal("", "Seleccionar almacen", "warning");
+        } else {
+            document.getElementById('loadingSp').style.display = 'block';
+
+            $.ajax({
+                type: "POST", dataType: 'json', data: { usuario, password, idalmacen, NombreAlmacen },
+                url: RutaURL('/Login/IniciarLogin'),
+                success: function (data) {
+
+                    //location.href = RutaURL('/DetalleMesa/Index');
+
+                    if (data.data == true) {
+
+                        $.ajax({
+                            type: "POST", dataType: "JSON", async: false, cache: false,
+                            url: RutaURL('/Login/VerificarRolUsuario'),
+                            success: function (data) {
+                                if (data.dato == true) {
+
+                                    //location.href = RutaURL('/DetalleMesa/Index');
+                                    location.href = RutaURL('/DetalleMesa/Index');
+                                     window.location.href = '@Url.Action("Index", "Venta")?m=0&c=0';
+
+                                } else {
+                                    document.getElementById('loadingSp').style.display = 'none';
+                                    swal("", "El usuario no tiene asignado el rol vendedor.", "warning");
+                                }
+                            }
+
+                        });
+
+
+                    } else {
+                        document.getElementById('loadingSp').style.display = 'none';
+                        swal("Error de inicio de sesión", "Verificar usuario y contraseña", "warning");
+                    }
+
+                }
+            });
+
+        }
+    }
+
+    function deshabilitaRetroceso() {
+
+        window.location.hash = "no-back-button";
+        window.location.hash = "Again-No-back-button"
+        window.onhashchange = function () { window.location.hash = ""; }
+
+    }
+
+    $("#usuario").on('keyup', function (e) {
+        var NombreUsuario = $('#usuario').val();
+        $("#idalmacen").empty();
+        $.ajax({
+            type: "POST", dataType: 'json', data: { usuario: NombreUsuario }, async: false,
+            url: RutaURL('/Login/ObtenerAlmacenUsuario'),
+            success: function (data) {
+
+                $("#idalmacen").append($("<option>").val(0).text("Seleccione almacen"));
+                $.each(data, function () {
+                    $("#idalmacen").append($("<option>").val(this.Id).text(this.Nombre));
+                })
+            }
+        });
+
+    });
+
+    function mayus2(e) {
+        e.value = e.value.toUpperCase();
+        e.value = e.value.trim();
+        //e.value = e.value.toLowerCase();
+    }
+
+    $("#usuario").on("keydown", function (event) {
+        if (event.which == 13) {
+            $("#password").focus();
+        }
+    });
+    $("#password").on("keydown", function (event) {
+        if (event.which == 13) {
+            $("#idalmacen").focus();
+        }
+    });
+    $("#idalmacen").on("keydown", function (event) {
+        if (event.which == 13) {
+            Iniciar();
+        }
+    });
+
+
+</script>

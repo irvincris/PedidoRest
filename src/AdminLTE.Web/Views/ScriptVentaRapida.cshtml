@@ -1,0 +1,2206 @@
+﻿
+<script>
+    var arrayProductoEliminado = [];
+    var estadoColor, ObservacionProducto, IdGlobalObs, LoginDetalle;
+
+    self.onload = function () {
+        $("#idcliente").val(1);
+        // $("#btcomp").prop('disabled', true);
+        //$("#composicion").children().prop('disabled', true);
+
+        ListarClasificacion();
+
+        var tabla = $('#tbproducto').dataTable({
+            "searching": false,
+            "lengthChange": false,
+            "pageLength": 5,
+            "paging": false,
+            "info": false,
+            "columnDefs": [{
+                "targets": [4, 5], "className": "text-right",
+            }, {
+                "targets": [3, 7], "className": "text-center",
+            }]
+        });
+
+        $('#tbcomposicion').dataTable({
+            "searching": false,
+            "lengthChange": false,
+            "pageLength": 5,
+            "paging": false,
+            "info": false,
+            "columnDefs": [{
+                "targets": [2, 4], "className": "text-center",
+            }]
+        });
+
+        $('#tbproducto tr > *:nth-child(7)').hide();
+        DeshabilitarColumns();
+        OpcionCheck();
+        OpcionCheckDatosVenta();
+
+        $("#EnvioFacturachk").prop("checked", true);
+        $("#ImprimiFacturachk").prop("checked", true);
+
+        ObtenerDetalleVenta();
+
+        var cuentaMesa = $('#DescripcionCuenta').val() + ' - ' + $('#usuario').val();
+
+        $('#mesaNro').html("Mesa: " + $('#DescripcionMesa').val());
+
+        if (parseFloat($('#CodMesa').val()) == 0) {
+
+            $('#mesaNro').html(cuentaMesa);
+        }
+
+
+        opcionCantidad = 0;
+
+        TextoObservacion = "";
+
+        ListarObservaciones();
+        IdGlobalObs = 0;
+
+        ObtenerProducto(1);
+    }
+
+
+    function ListarClasificacion() {
+        //verificarSesion();
+
+        $('#clasificacion').remove();
+
+        var dato = '<div class="form-group" id="clasificacion"></div >';
+        $('#OpcionClasificacion').append(dato);
+        var divisor = ' <hr color="green" />';
+
+        var idalmacen = $('#idalmacen').val();
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { idalmacen }, async: false,
+            url: RutaURL('/Producto/ListarClasificacion'),
+            success: function (data) {
+
+                $.each(data, function () {
+                    var dato = '<button type="button" style="width:145px;height:80px;background:' + this.Color + '; font-size: 13px;font-weight:bold" id="button" class="btn btn-default btn-sm margen" onclick="ObtenerProducto(' + this.Cod_Clas + ')"> ' + this.Clasificacion + ' </button> ';
+                    $('#clasificacion').append(dato);
+                })
+            }
+        });
+        //$('#clasificacion').append(divisor);
+    }
+
+
+    function ObtenerProducto(codClas) {
+        var idalmacen = $('#idalmacen').val();
+        var nombreProducto = $('#txtBuscarProducto').val();
+
+        $('#producto').remove();
+        $('#composicion').remove();
+
+        // Contenedor para todos los productos
+        var contenedor = '<div class="row" style="margin: 0;" id="producto"></div>';
+        $('#OpcionProducto').append(contenedor);
+
+        $.ajax({
+            type: "POST",
+            dataType: 'json',
+            data: { codClas, idalmacen, nombreProducto },
+            async: false,
+            url: RutaURL('/Producto/ListarProducto'),
+            success: function (data) {
+                // Agrupar productos por categoría
+                var productosPorCategoria = {};
+
+                $.each(data, function () {
+                    var Codcategoria = this.Cod_Clas;
+                    var nombreCategoria = this.Clasificacion;
+                    var Img = this.ImagenBase64;
+                  
+                 
+                    if (!productosPorCategoria[Codcategoria]) {
+                        //productosPorCategoria[Codcategoria] = [];
+                        productosPorCategoria[Codcategoria] = {
+                            nombre: nombreCategoria,
+                            CategoriaCod: Codcategoria,
+                            Imagen: Img,
+                            productos: []
+                        };
+                    }
+                    productosPorCategoria[Codcategoria].productos.push(this);
+                });
+
+                // Renderizar productos por categoría
+                for (var categoria in productosPorCategoria) {
+                    // Crear etiqueta de categoría
+                 
+                    var nombreCategoria = productosPorCategoria[categoria].nombre;
+                    var labelCategoria = `
+                    <div class="col-12 mt-3" id="categoria-${productosPorCategoria[categoria].CategoriaCod}">
+                        <label style="font-weight:bold; font-size:16px;color:#8e1919">${nombreCategoria}</label>
+                    </div>`;
+                    $('#producto').append(labelCategoria);
+
+                    // Crear contenedor de productos para esta categoría
+
+                    //var contenedorCategoria = $('<div class="row w-100 gx-2"></div>');
+                    var contenedorCategoria = $('<div class="row col-12" style="margin-left:0px;margin-right:0px;padding: 0"></div>');
+
+                    productosPorCategoria[categoria].productos.forEach(function (producto) {
+
+                        var imagenSrc = (producto.ImagenBase64 && producto.ImagenBase64.trim() !== "")
+                            ? "data:image/jpeg;base64," + producto.ImagenBase64
+                            : "/Img/SinImagen.png";
+
+                        var productoHtml = `
+                        <div class="col-12 col-md-6" id="OpcionProducto1">
+                            <div class="tarjeta-producto">
+                                <div class="row" style="height:100%">
+                                    <div class="col-3" style="height:100%; text-align:center">
+                                        <img src="${imagenSrc}" id="img_${producto.Cod_Prod}" style="width:100%; height:100px" class="aspect" alt="">
+                                    </div>
+                                    <div class="col-6">
+                                        <div>
+                                            <p class="nombre-producto" style="font-size:12px;font-weight:bold">${producto.Nombre}</p>
+                                            <p class="nombre-producto" style="font-size:11px">${producto.Descripcion}</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="info-producto" style="font-size:14px">
+                                            <span class="precio-producto">${parseFloat(producto.Precio).toFixed(2)} Bs.</span>
+                                        </div>
+                                        <button class="btn-sm" style="background:#8e1919;border-radius: 50%; width: 40px; height: 40px;padding: 0;" onclick="ObtenerCodProd(${producto.Cod_Prod}, \`${producto.Nombre}\`, \`${producto.Precio}\`, \`${producto.Tip_Clas}\`, \`${producto.tip_unid}\`)">
+                                            <span class="fa fa-plus"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+
+                        contenedorCategoria.append(productoHtml);
+
+                    });
+
+                    $('#producto').append(contenedorCategoria);
+
+
+                }
+            }
+        });
+    }
+
+    function scrollACategoria(codClas) {
+        var elemento = document.getElementById("categoria-" + codClas);
+        if (elemento) {
+            const offset = 140;
+
+            // Calcula la posición real del elemento
+            const posicion = elemento.getBoundingClientRect().top + window.pageYOffset - offset;
+
+            // Desplaza con animación suave
+            window.scrollTo({
+                top: posicion,
+                behavior: 'smooth'
+            });
+        }
+    }
+
+
+
+    function ObtenerProducto22(codClas) {
+
+        var idalmacen = $('#idalmacen').val();
+        var nombreProducto = $('#txtBuscarProducto').val();
+
+        $('#producto').remove();
+        $('#composicion').remove();
+
+        var dato = '<div class="row" style="margin: 0;" id="producto"></div >';
+        $('#OpcionProducto').append(dato);
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codClas, idalmacen, nombreProducto }, async: false,
+            url: RutaURL('/Producto/ListarProducto'),
+            success: function (data) {
+                $.each(data, function () {
+                    //var dato = '<button type="button" style="width:135px;height:95px; font-size: 11px;font-weight:bold" class="btn btn-default btn-sm margen" onclick="ObtenerCodProd(' + this.Cod_Prod + ',\'' + this.Nombre + '\',\'' + this.Precio + '\',\'' + this.Tip_Clas + '\',\'' + this.tip_unid + '\')"> ' + this.Nombre + '<br>' + parseFloat(this.Precio).toFixed(2) + ' Bs' + ' </button> ';
+
+                    var dato = `<div class="col-12 col-md-6" id="OpcionProducto1">
+                            <div class="tarjeta-producto">
+                                <div class="row" style="height:100%">
+                                    <div class="col-3" style="height:100%; text-align:center">
+                                        <img src="/Img/SinImagen.png" id="` + this.Cod_Prod + `" style="width:100%; height:100px" class="aspect" alt="">
+                                    </div>
+                                    <div class="col-6">
+                                        <div>
+                                            <p class="nombre-producto" style="font-size:12px;font-weight:bold">` + this.Nombre + `</p>
+                                            <p class="nombre-producto" style="font-size:11px">` + this.Nombre + `</p>
+                                        </div>
+                                    </div>
+                                       <div class="col-3">
+                                        <div class="info-producto" style="font-size:14px">
+                                            <span class="precio-producto">` + parseFloat(this.Precio).toFixed(2) + ` Bs.</span>
+                                        </div>
+                                        <button class="btn-sm" style="background:#8e1919;border-radius: 50%; width: 40px; height: 40px;padding: 0;" onclick="ObtenerCodProd(` + this.Cod_Prod + `,\`` + this.Nombre + `\`,\`` + this.Precio + `\`,\`` + this.Tip_Clas + `\`,\`` + this.tip_unid + `\`)"><span class="fa fa-plus"></span></button>
+                                    </div>
+
+                                </div>
+
+                            </div>
+                        </div>`;
+
+                    $('#producto').append(dato);
+
+                    if (this.ImagenBase64 != "") {
+                        var datoImg = "data:image/jpeg;base64," + this.ImagenBase64;
+                        $('#' + this.Cod_Prod + '').attr('src', datoImg);
+                    }
+                })
+            }
+        });
+    }
+
+    var CodProducto, Producto, Precio, TipClasif, TipUnidad, VariableCantidad;
+    function ObtenerCodProd(codProd, NombreProd, PrecioProd, TipClas, TipUnid) {
+
+        CodProducto = codProd;
+        Producto = NombreProd;
+        Precio = PrecioProd;
+        TipClasif = TipClas;
+        TipUnidad = TipUnid;
+
+
+        estadoColor = true;
+        $("#btnLlevar").css("background-color", "aliceblue");
+
+        TextoObservacion = "";
+        $("#txtObservacion").hide();
+        $("#txtObservacion").val("");
+        $("#ModalDatosCantidad").modal("show");
+        VariableCantidad = 1;
+        LimpiarDato();
+    }
+
+
+    var numero, ContadorIndex;
+    function Aceptar() {
+        $("#ModalDatosCantidad").modal("hide");
+
+
+        var codAlmacen = $('#idalmacen').val();
+        VerificarProductoHomologado();
+
+        if (EstadoProdHomolog && VariableCantidad == 1) {
+
+            var tabla = $('#tbproducto').DataTable();
+            var CantidadTotal = 0, ImporteTotal = 0, MontoTotal = 0;
+            var estado = true;
+            numero = 0;
+
+            ContadorIndex = 1;
+            IdGlobalObs += 1;
+
+            var cant = $('#cantidad').val();
+            if (cant != 0) {
+
+                var estadoVerificar = true;
+                var Stock = 0;
+                if (TipClasif != 9 && TipClasif != 8 && TipClasif != 3 && TipClasif != 4) {
+
+                    var codProd = CodProducto;
+
+                    $.ajax({
+                        type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+                        url: RutaURL('/Venta/VerificarStock'),
+                        success: function (data) {
+                            Stock = data.data;
+                        }
+                    });
+                    if (Stock < cant) {
+                        swal("", "No existe suficiente cantidad en stock", "warning");
+                        $('#cantidad').val(0);
+                        estadoVerificar = false;
+                    }
+
+                }
+
+                if (estadoVerificar) {
+                    //$("#ModalDatosCantidad").modal("hide");
+                    if (tabla.data().any()) {
+
+                        $("#tbproducto").find("tbody").find("tr").each(function () {
+                            ContadorIndex = parseFloat($(this).find("td:eq(8)").html()) + 1;
+                        });
+
+                        if (TipClasif != 3) {
+
+                            $("#tbproducto").find("tbody").find("tr").each(function () {
+
+                            });
+                        }
+
+                    }
+
+                    //tabla.column(0).data().each(function (value, index) {
+                    //    numero = value;
+                    //});
+                    if (ObservacionProducto != "") {
+                        ObservacionProducto = $("#txtObservacion").val();
+                    }
+
+                    if (estado) {
+                        tabla.row.add([
+                            numero, Producto, '<input type="text" class="form-control form-control-sm" style="font-size: 14px; background-color:transparent; border:0;height:20px;width:160px" value="' + TextoObservacion + ' ' + ObservacionProducto + '" id="' + IdGlobalObs + '" oninput="convertToUpper(this)" autocomplete="off">',
+                            cant, parseFloat(Precio).toFixed(2), parseFloat((cant * Precio)).toFixed(2), CodProducto,
+                            '<button type="button" class="btn btn-danger btn-xs" onclick="Borrarfila(' + numero + ',\'' + ContadorIndex + '\',0,0,0,0)"> <span class="fa fa-times"></span> </button>', ContadorIndex, TipClasif, TipUnidad, 1, 0, IdGlobalObs, $("#Codusuario").val()
+
+                        ]).draw(false);
+                        tabla.order([8, 'asc']).draw();
+                        VariableCantidad += 1;
+                    }
+
+                    $("#tbproducto").find("tbody").find("tr").each(function () {
+                        numero += 1;
+                        $(this).find("td:eq(0)").html(numero);
+                        var buton = '<button type="button" class="btn btn-danger btn-xs" onclick="Borrarfila(' + numero + ',\'' + $(this).find("td:eq(8)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(12)").html() + '\',\'' + $(this).find("td:eq(1)").html() + '\',\'' + $(this).find("td:eq(3)").html() + '\',\'' + $(this).find("td:eq(14)").html() + '\')"> <span class="fas fa-times"></span> </button>';
+                        $(this).find("td:eq(7)").html(buton);
+
+                        MontoTotal += parseFloat($(this).find("td:eq(5)").html());
+                    });
+
+                    $('#total').val(MontoTotal.toFixed(2));
+                    $('#lblTotal').html("Total (Bs): " + parseFloat(MontoTotal).toFixed(2));
+                    CalcularTotal();
+                    $('#tbproducto tr > *:nth-child(3)').hide();
+                    $('#tbproducto tr > *:nth-child(7)').hide();
+                    $('#tbproducto tr > *:nth-child(9)').hide();
+                    $('#tbproducto tr > *:nth-child(10)').hide();
+                    $('#tbproducto tr > *:nth-child(11)').hide();
+                    $('#tbproducto tr > *:nth-child(12)').hide();
+                    $('#tbproducto tr > *:nth-child(13)').hide();
+                    $('#tbproducto tr > *:nth-child(14)').hide();
+                    $('#tbproducto tr > *:nth-child(15)').hide();
+
+                    LimpiarDato();
+                    ObtenerComposicion(CodProducto, 0, cant, Precio);
+
+                    $('#cantReg').html(numero);
+                }
+            }
+        }
+
+
+    }
+
+
+    var CantidadComp, CantidadSubcomposicion;
+    function ObtenerComposicion(CodProd, NroProducto, CantidadProdPrincipal, PrecioGeneral) {
+
+        if (NroProducto > 0) {
+            // numero = NroProducto;
+            ContadorIndex = NroProducto;
+        }
+
+        var idalmacen = $('#idalmacen').val();
+
+        var contAux = 0;
+        $.ajax({
+            type: "POST", dataType: 'json', data: { CodProd, idalmacen, TipClasif }, async: false,
+            url: RutaURL('/Producto/ListarComposicion'),
+            success: function (data) {
+                $.each(data, function () {
+                    contAux = 1;
+                })
+            }
+        });
+
+
+        if (contAux == 1) {
+
+            $("#ModalListaComposicion").modal("show");
+
+
+            var estado = false;
+            var SepararLinea = 0;
+
+            var dato, codComp, dato2;
+            var divisor = ' <hr color="green" />';
+
+            CantidadComp = 0;
+            $('#composicion').remove();
+
+            var dato = '<div class="form-group" id="composicion"></div >';
+            $('#OpcionComposicion').append(dato);
+            var Descripcion;
+            $.ajax({
+                type: "POST", dataType: 'json', data: { CodProd, idalmacen, TipClasif }, async: false,
+                url: RutaURL('/Producto/ListarComposicion'),
+                success: function (data) {
+
+
+                    $.each(data, function () {
+
+                        SepararLinea += 1;
+                        if (SepararLinea == 1) {
+                            var divisor = ' <hr color="green" />';
+                            var tituloIngred = '<label>Ingredientes:</label>';
+                            //$('#composicion').append(divisor);
+                            $('#composicion').append(tituloIngred);
+                        }
+
+                        estado = true;
+                        if (this.Cod_Comp != codComp) {
+
+                            CantidadComp += this.Cantidad;
+                            dato2 = '<div id="' + this.Cod_Comp + '"></div>';
+                            $('#composicion').append(dato2);
+
+                            Descripcion = this.Tipo + "(" + this.Cantidad + ")";
+                            dato = '<label style="font-weight:bold;font-style:italic;width:160px" id=' + 'lab' + this.Cod_Comp + '>' + Descripcion + '</label> <br> ';
+                            //$('#' + this.Cod_Comp + '').append(divisor);
+                            $('#' + this.Cod_Comp + '').append(dato);
+                        }
+
+                        // dato = '<button type="button" style="width:130px;height:60px;background:SandyBrown; font-size: 13px; border-color: black" class="btn btn-default btn-sm margen" onclick="AgregarRegistroComposicion(' + this.Cod_deco + ',\'' + this.Cod_Comp + '\',\'' + this.Tipo + '\',\'' + this.Nombre + '\')"> ' + this.Nombre + ' </button> ' + this.SaltoLinea + '';
+                        dato = '<button type="button" style="width:150px;height:60px; font-size: 13px; font-weight:bold" class="btn btn-default btn-sm margen" onclick="AgregarRegistroComposicion(' + this.Cod_deco + ',\'' + this.Cod_Comp + '\',\'' + this.Tipo + '\',\'' + this.Nombre + '\',\'' + this.Cantidad + '\',\'' + this.Cod_ProdComp + '\',\'' + ContadorIndex + '\',1,\'' + this.PorcionLlevar + '\',\'' + this.Porcion + '\',\'' + this.Precio + '\',\'' + CantidadProdPrincipal + '\',\'' + PrecioGeneral + '\',\'' + this.Tip_Clas + '\',\'' + Descripcion + '\')"> ' + this.Nombre + ' </button> ';
+
+                        $('#' + this.Cod_Comp + '').append(dato);
+                        codComp = this.Cod_Comp;
+
+                    })
+                }
+            });
+
+        }
+
+
+
+        $("#producto").children().prop('disabled', false);
+        if (estado) {
+            $("#producto").children().prop('disabled', true);
+            $("#clasificacion").children().prop('disabled', true);
+        }
+
+        ContadorComposicion = 0;
+    }
+
+
+    var ProdCompPrincipal, ContadorComposicion;
+    function AgregarRegistroComposicion(Coddeco, Codcomp, Tipo, ProductoDet, Cantidad, CodProdComp, NumeroProd, tipoComp, PorcionLlevar, Porcion, Precio, CantidadProdPrincipal, PrecioGeneral, TipClas, Descripcion) {
+        var estadoVerificar = true;
+
+        ProdCompPrincipal = ProductoDet;
+
+        var tabla = $('#tbcomposicion').DataTable();
+        var estado = true;
+        var CantidadDetalle = 0;
+        var cont = 0;
+        ContadorComposicion += 1;
+        var numComp = 0;
+        var NC = 0;
+
+        var codAlmacen = $('#idalmacen').val();
+        ////////////////
+
+        //var Stock = 0;
+        //var cant = 0;
+        //cant = CantidadProdPrincipal * Porcion;
+
+        //$.ajax({
+        //    type: "POST", dataType: 'json', data: { codProd: CodProdComp, codAlmacen }, async: false,
+        //    url: RutaURL('/Venta/VerificarStock'),
+        //    success: function (data) {
+        //        Stock = data.data;
+        //    }
+        //});
+        //if (Stock < cant) {
+        //    swal("", "No existe suficiente cantidad en stock", "warning");
+        //    estadoVerificar = false;
+        //}
+
+        /////////////
+
+        if (estadoVerificar) {
+
+            if (tabla.data().any()) {
+
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                    numComp = parseFloat($(this).find("td:eq(20)").html()) + 1;
+                    if (Codcomp == $(this).find("td:eq(7)").html() && $(this).find("td:eq(6)").html() == NumeroProd && $(this).find("td:eq(11)").html() == tipoComp) {
+                        cont += 1;
+                    }
+
+                    //if ($(this).find("td:eq(9)").html() == CodProdComp && $(this).find("td:eq(6)").html() == NumeroProd && $(this).find("td:eq(11)").html() == tipoComp) {
+                    //    estado = false;
+                    //    CantidadDetalle = parseFloat($(this).find("td:eq(4)").html()) + 1;
+                    //    $(this).find("td:eq(4)").html(CantidadDetalle);
+                    //}
+
+                    NC = parseFloat($(this).find("td:eq(22)").html());
+                });
+            }
+
+            NC += 1;
+
+
+            $("#" + "lab" + Codcomp + "").text(Descripcion + " - " + (cont + 1));
+            if (Cantidad == (cont + 1)) {
+                $("#" + Codcomp + "").children().prop('disabled', true);
+            }
+
+            var correlativo = 0;
+
+            if (estado) {
+
+                tabla.row.add([
+                    0, Producto, Tipo, ProductoDet, 1,
+                    '<button type="button" class="btn btn-danger btn-xs" onclick="BorrarfilaComp(' + correlativo + ',\'' + Codcomp + '\',\'' + NumeroProd + '\',\'' + Cantidad + '\',\'' + CodProducto + '\')"> X </button>', NumeroProd, Codcomp, CodProducto, CodProdComp, Cantidad, tipoComp, 0, 0, PorcionLlevar, Porcion, Precio, CantidadProdPrincipal, PrecioGeneral, TipClas, numComp, 1, NC
+                ]).draw(false);
+                tabla.order([20, 'asc']).draw();
+            }
+
+            var CantidadTotalComp = 0;
+            $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                //NC += 1;
+                //$(this).find("td:eq(22)").html(NC);
+
+                correlativo += 1;
+                $(this).find("td:eq(0)").html(correlativo);
+                var buton = '<button type="button" class="btn btn-danger btn-xs" onclick="BorrarfilaComp(' + correlativo + ',\'' + $(this).find("td:eq(7)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(10)").html() + '\',\'' + $(this).find("td:eq(8)").html() + '\',\'' + $(this).find("td:eq(1)").html() + '\')"> X </button>';
+                $(this).find("td:eq(5)").html(buton);
+
+                if (NumeroProd == $(this).find("td:eq(6)").html() && $(this).find("td:eq(11)").html() == tipoComp) {
+                    CantidadTotalComp += parseFloat($(this).find("td:eq(4)").html());
+                }
+            });
+
+            DeshabilitarColumns();
+
+            /*   jQuery.noConflict();*/
+            if (TipClasif == 9) {
+                //$("#ModalSubcomposicion").modal("show");
+                //ObtenerSubComposicion(CodProdComp, 0, Coddeco, CantidadProdPrincipal, NC);
+                //$('#ModalSubcomposicion').modal({ backdrop: 'static', keyboard: false })
+            }
+
+            if (CantidadComp == CantidadTotalComp) {
+                $("#producto").children().prop('disabled', false);
+                $("#clasificacion").children().prop('disabled', false);
+                $('#composicion').remove();
+                $("#AceptarVenta").prop('disabled', false);
+
+                $("#ModalListaComposicion").modal("hide");
+            }
+        }
+    }
+
+
+    function ObtenerSubComposicion(CodProd, NroProducto, CodDecoInicial, CantidadProdPrincipal, NC) {
+
+        var TipClasif = 0;
+        if (NroProducto > 0) {
+
+            ContadorIndex = NroProducto;
+        }
+
+        var idalmacen = $('#idalmacen').val();
+        var estado = false;
+
+        var dato, codComp, dato2;
+
+        CantidadSubcomposicion = 0;
+        $('#Subcomposicion').remove();
+
+        var dato = '<div class="form-group" id="Subcomposicion"></div >';
+        $('#OpcionSubComposicion').append(dato);
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { CodProd, idalmacen, TipClasif }, async: false,
+            url: RutaURL('/Producto/ListarComposicion'),
+            success: function (data) {
+                $.each(data, function () {
+
+                    estado = true;
+                    if (this.Cod_Comp != codComp) {
+
+                        CantidadSubcomposicion += this.Cantidad;
+                        dato2 = '<div id="' + this.Cod_Comp + '"></div>';
+                        $('#Subcomposicion').append(dato2);
+
+                        var Descripcion = this.Tipo + "(" + this.Cantidad + ")";
+                        dato = '<label style="font-weight:bold;font-style:italic;width:130px">' + Descripcion + '</label>  ';
+                        $('#' + this.Cod_Comp + '').append(dato);
+                    }
+
+                    dato = '<button type="button" style="width:130px;height:60px;background:SandyBrown; font-size: 13px; border-color: black" class="btn btn-default btn-sm margen" onclick="AgregarRegistroSubComposicion(' + this.Cod_deco + ',\'' + this.Cod_Comp + '\',\'' + this.Tipo + '\',\'' + this.Nombre + '\',\'' + this.Cantidad + '\',\'' + this.Cod_ProdComp + '\',\'' + ContadorIndex + '\',2,\'' + CodDecoInicial + '\',\'' + this.PorcionLlevar + '\',\'' + this.Porcion + '\',\'' + this.Precio + '\',\'' + CantidadProdPrincipal + '\',\'' + this.Tip_Clas + '\',\'' + CodProd + '\',\'' + NC + '\')"> ' + this.Nombre + ' </button> ';
+                    $('#' + this.Cod_Comp + '').append(dato);
+                    codComp = this.Cod_Comp;
+
+                })
+            }
+        });
+
+        $("#producto").children().prop('disabled', false);
+        if (estado) {
+            $("#producto").children().prop('disabled', true);
+            $("#clasificacion").children().prop('disabled', true);
+        }
+
+    }
+
+
+    function AgregarRegistroSubComposicion(Coddeco, Codcomp, Tipo, ProductoDet, Cantidad, CodProdComp, NumeroProd, tipoComp, CodDecoInicial, PorcionLlevar, Porcion, Precio, CantidadProdPrincipal, TipClas, CodProdCompPrincipal, NC) {
+
+        var tabla = $('#tbcomposicion').DataTable();
+        var estado = true;
+        var CantidadDetalle = 0;
+        var cont = 0;
+
+        var numComp = 0;
+
+        if (tabla.data().any()) {
+
+            $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                numComp = parseFloat($(this).find("td:eq(20)").html()) + 1;
+
+                if (Codcomp == $(this).find("td:eq(7)").html() && $(this).find("td:eq(12)").html() == CodDecoInicial && $(this).find("td:eq(11)").html() == tipoComp && $(this).find("td:eq(13)").html() == ContadorComposicion) {
+                    cont += 1;
+                }
+
+                if ($(this).find("td:eq(9)").html() == CodProdComp && $(this).find("td:eq(12)").html() == CodDecoInicial && $(this).find("td:eq(11)").html() == tipoComp && $(this).find("td:eq(13)").html() == ContadorComposicion) {
+
+                    estado = false;
+                    CantidadDetalle = parseFloat($(this).find("td:eq(4)").html()) + 1;
+                    $(this).find("td:eq(4)").html(CantidadDetalle);
+                }
+            });
+        }
+
+        if (Cantidad == (cont + 1)) {
+            $("#" + Codcomp + "").children().prop('disabled', true);
+        }
+
+        var correlativo = 0;
+
+        if (estado) {
+
+            tabla.row.add([
+                0, ProdCompPrincipal, Tipo, ProductoDet, 1,
+                '<button type="button" class="btn btn-danger btn-xs" onclick="BorrarfilaComp(' + correlativo + ',\'' + Codcomp + '\',\'' + NumeroProd + '\',\'' + Cantidad + '\',\'' + CodProducto + '\')"> X </button>', NumeroProd, Codcomp, CodProdCompPrincipal, CodProdComp, Cantidad, tipoComp, CodDecoInicial, ContadorComposicion, PorcionLlevar, Porcion, Precio, CantidadProdPrincipal, 0, TipClas, numComp, 1, NC
+            ]).draw(false);
+            tabla.order([20, 'asc']).draw();
+        }
+
+        var CantidadTotalComp = 0;
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+            correlativo += 1;
+            $(this).find("td:eq(0)").html(correlativo);
+            var buton = '<button type="button" class="btn btn-danger btn-xs" onclick="BorrarfilaComp(' + correlativo + ',\'' + $(this).find("td:eq(7)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(10)").html() + '\',\'' + $(this).find("td:eq(8)").html() + '\',\'' + $(this).find("td:eq(1)").html() + '\')"> X </button>';
+            $(this).find("td:eq(5)").html(buton);
+
+            if (CodDecoInicial == $(this).find("td:eq(12)").html() && $(this).find("td:eq(11)").html() == tipoComp && $(this).find("td:eq(13)").html() == ContadorComposicion) {
+
+                CantidadTotalComp += parseFloat($(this).find("td:eq(4)").html());
+
+            }
+
+        });
+
+        if (CantidadSubcomposicion == CantidadTotalComp) {
+            $("#ModalSubcomposicion").modal("hide");
+        }
+
+        DeshabilitarColumns();
+
+    }
+
+
+    function DeshabilitarColumns() {
+        $('#tbcomposicion tr > *:nth-child(6)').hide();
+
+        $('#tbcomposicion tr > *:nth-child(7)').hide();
+        $('#tbcomposicion tr > *:nth-child(8)').hide();
+        $('#tbcomposicion tr > *:nth-child(9)').hide();
+        $('#tbcomposicion tr > *:nth-child(10)').hide();
+        $('#tbcomposicion tr > *:nth-child(11)').hide();
+        $('#tbcomposicion tr > *:nth-child(12)').hide();
+        $('#tbcomposicion tr > *:nth-child(13)').hide();
+        $('#tbcomposicion tr > *:nth-child(14)').hide();
+        $('#tbcomposicion tr > *:nth-child(15)').hide();
+        $('#tbcomposicion tr > *:nth-child(16)').hide();
+        $('#tbcomposicion tr > *:nth-child(17)').hide();
+        $('#tbcomposicion tr > *:nth-child(18)').hide();
+        $('#tbcomposicion tr > *:nth-child(19)').hide();
+        $('#tbcomposicion tr > *:nth-child(20)').hide();
+        $('#tbcomposicion tr > *:nth-child(21)').hide();
+        $('#tbcomposicion tr > *:nth-child(22)').hide();
+
+        $('#tbcomposicion tr > *:nth-child(23)').hide();
+    }
+
+
+    var estadoEliminar, codigoAux, indexContadorAux, codprodAux, codDecvAux, NombProdAux, CantAux;
+    var estadoObser, CoduserDetalle;
+
+    function Borrarfila(codigo, IndexContador, codprod, codDecv, ProductoNomb, Cantidad, codUsuaDetalle) {
+        estadoEliminar = true;
+        //estadoObser = false;
+
+        //// Eliminacion productos de venta
+
+        codigoAux = codigo;
+        indexContadorAux = IndexContador;
+        codprodAux = codprod;
+        codDecvAux = codDecv;
+
+        NombProdAux = ProductoNomb;
+        CantAux = Cantidad;
+        CoduserDetalle = codUsuaDetalle;
+
+        if (codDecv > 0) {
+            estadoEliminar = false;
+            $("#MotivoObservacion").val("");
+            $("#PinUsuarioEliminar").val("");
+
+            if ($("#UsoCodigoUsuario").val() && codUsuaDetalle != $("#Codusuario").val()) {
+                $("#ModalUserCodigo").modal("show");
+            } else {
+                $("#ModalObservacion").modal("show");
+            }
+
+        }
+
+
+        //////////////////////////
+
+        if (estadoEliminar) {
+
+            var tabla = $('#tbproducto').DataTable();
+            var tablaComp = $('#tbcomposicion').DataTable();
+            var buton, num, MontoTotal;
+            var codEliminar = codigo - 1;
+
+            tabla.row(':eq(' + codEliminar + ')').remove().draw();
+
+            num = 0;
+            MontoTotal = 0;
+
+            if (tabla.data().any()) {
+                $("#tbproducto").find("tbody").find("tr").each(function () {
+                    num += 1;
+                    $(this).find("td:eq(0)").html(num);
+                    buton = '<button type="button" class="btn btn-danger btn-xs" onclick="Borrarfila(' + num + ',\'' + $(this).find("td:eq(8)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(12)").html() + '\',0,0,\'' + $(this).find("td:eq(14)").html() + '\')"> <span class="fa fa-times"></span> </button>';
+                    $(this).find("td:eq(7)").html(buton);
+                    MontoTotal += parseFloat($(this).find("td:eq(5)").html());
+
+                });
+            }
+            $('#cantReg').html(num);
+
+            $('#total').val(MontoTotal.toFixed(2));
+            CalcularTotal();
+            tabla.order([8, 'asc']).draw();
+
+            /// eliminarComp
+
+            var codEliminarComp;
+            var cont = 0;
+
+            num = 0;
+
+            if (tablaComp.data().any()) {
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+                    var n = parseFloat($(this).find("td:eq(0)").html());
+
+                    if (IndexContador == $(this).find("td:eq(6)").html()) {
+
+                        cont += 1;
+                        if (cont == 1) {
+                            codEliminarComp = n - 1;
+                        }
+                        tablaComp.row(':eq(' + codEliminarComp + ')').remove().draw();
+
+
+
+                    }
+
+                });
+
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                    num += 1;
+                    $(this).find("td:eq(0)").html(num);
+                });
+
+                //for (var i = 1; i <= cont; i++) {
+                //    tablaComp.row(':eq(' + codEliminarComp + ')').remove().draw();
+                //}
+
+            }
+
+            $("#producto").children().prop('disabled', false);
+            $("#clasificacion").children().prop('disabled', false);
+            $('#composicion').remove();
+
+        }
+    }
+
+
+    function BorrarfilaComp(codigo, CodComp, Nro, CantidadComp, CodProdu, NombreProducto) {
+        var tabla = $('#tbcomposicion').DataTable();
+        var buton, num;
+        var cont = 0;
+
+        var codEliminar = codigo - 1;
+        tabla.row(':eq(' + codEliminar + ')').remove().draw();
+
+        num = 0;
+
+        Producto = NombreProducto;
+
+        ObtenerComposicion(CodProdu, Nro);
+
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+            num += 1;
+            $(this).find("td:eq(0)").html(num);
+            buton = '<button type="button" class="btn btn-danger btn-xs" onclick="BorrarfilaComp(' + num + ',\'' + $(this).find("td:eq(7)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(10)").html() + '\',\'' + $(this).find("td:eq(8)").html() + '\')"> X </button>';
+            $(this).find("td:eq(5)").html(buton);
+
+            if (CodComp == $(this).find("td:eq(7)").html() && $(this).find("td:eq(6)").html() == Nro) {
+                cont += 1;
+            }
+
+            $("#" + $(this).find("td:eq(7)").html() + "").children().prop('disabled', true);
+        });
+
+        if (CantidadComp > cont) {
+            $("#" + CodComp + "").children().prop('disabled', false);
+        }
+
+        tabla.order([0, 'asc']).draw();
+
+        $('#tbcomposicion tr > *:nth-child(6)').hide();
+    }
+
+    var opcionCantidad;
+    function DatoNumero(num) {
+        var dat;
+        var numero = $('#cantidad').val();
+        dat = numero + num;
+
+        if (numero == 0 && numero.length == 1) {
+            dat = num;
+        }
+
+
+        $('#cantidad').val(dat);
+        ObservacionProducto = $('#txtObservacion').val();
+        //////
+        if (opcionCantidad == 1 && dat.length == 2) {
+            Aceptar();
+        } else if (opcionCantidad == 2 && dat.length == 3) {
+            Aceptar();
+        } else if (opcionCantidad == 0) {
+            Aceptar();
+        }
+
+    }
+
+    function opcionDatoNro(num) {
+        opcionCantidad = 1;
+        if (num == 100) {
+            opcionCantidad = 2;
+        }
+    }
+
+    function LimpiarDato() {
+        $('#cantidad').val(0);
+        opcionCantidad = 0;
+        $("#opcionLlevar").html("");
+
+        estadoColor = true;
+        $("#btnLlevar").css("background-color", "aliceblue");
+        $("#txtObservacion").hide();
+        $("#txtObservacion").val("");
+    }
+
+
+    function ActivarDesc() {
+        $("#MotivoDescuento").val("");
+        $("#ModalDescuento").modal("show");
+    }
+
+    function CancelarDesc() {
+        //$("#descuento").prop('disabled', true);
+        $("#ModalObservacion").modal("hide");
+    }
+
+    function MotivoObservacion() {
+
+        var Motivo = $("#MotivoObservacion").val();
+        if (Motivo == "") {
+            swal("", "Introducir observación", "warning");
+        } else {
+
+            var tabla = $('#tbproducto').DataTable();
+            var tablaComp = $('#tbcomposicion').DataTable();
+            var buton, num, MontoTotal;
+            var codEliminar = codigoAux - 1;
+
+            tabla.row(':eq(' + codEliminar + ')').remove().draw();
+
+            num = 0;
+            MontoTotal = 0;
+
+            if (tabla.data().any()) {
+                $("#tbproducto").find("tbody").find("tr").each(function () {
+                    num += 1;
+                    $(this).find("td:eq(0)").html(num);
+                    buton = '<button type="button" class="btn btn-danger btn-xs" onclick="Borrarfila(' + num + ',\'' + $(this).find("td:eq(8)").html() + '\',\'' + $(this).find("td:eq(6)").html() + '\',\'' + $(this).find("td:eq(12)").html() + '\',\'' + $(this).find("td:eq(1)").html() + '\',\'' + $(this).find("td:eq(3)").html() + '\',\'' + $(this).find("td:eq(14)").html() + '\')"> <span class="fa fa-times"></span> </button>';
+                    $(this).find("td:eq(7)").html(buton);
+                    MontoTotal += parseFloat($(this).find("td:eq(5)").html());
+
+                });
+            }
+            $('#cantReg').html(num);
+
+            $('#total').val(MontoTotal.toFixed(2));
+            CalcularTotal();
+            tabla.order([8, 'asc']).draw();
+
+            /// eliminarComp
+
+            var codEliminarComp;
+            var cont = 0;
+
+            num = 0;
+
+            if (tablaComp.data().any()) {
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+                    var n = parseFloat($(this).find("td:eq(0)").html());
+
+                    if (indexContadorAux == $(this).find("td:eq(6)").html()) {
+                        cont += 1;
+                        if (cont == 1) {
+                            codEliminarComp = n - 1;
+                        }
+                        tablaComp.row(':eq(' + codEliminarComp + ')').remove().draw();
+                    }
+                });
+
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                    num += 1;
+                    $(this).find("td:eq(0)").html(num);
+                });
+            }
+            $("#ModalObservacion").modal("hide");
+
+
+            var Mesa = "Mesa: " + $('#CodMesa').val();
+            var objeto = {
+                codProd: codprodAux, codDecv: codDecvAux, observacion: Motivo, Mesa, NombProdAux, CantAux, CoduserDetalle, LoginDetalle
+            };
+            arrayProductoEliminado.push(objeto);
+
+
+        }
+
+    }
+
+    function isNumberKey(evt) {
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode > 31 && (charCode < 46 || charCode > 57)) {
+            return false;
+        }
+        return true;
+    }
+
+    function ValidarKey(evt) {
+        var charCode = (evt.which) ? evt.which : evt.keyCode;
+        if (charCode >= 48 && (charCode <= 57)) {
+            return true;
+        }
+        return false;
+    }
+
+
+    $("#descuento").on('keyup', function (e) {
+        CalcularTotal();
+    });
+
+    function CalcularTotal() {
+        var importe = $("#total").val();
+        var descuento = 0; // $("#descuento").val();
+        var total = parseFloat(importe) - parseFloat(descuento);
+        if (total < 0) {
+            swal("", "EL DESCUENTO NO PUEDE SER MAYOR AL IMPORTE TOTAL", "warning");
+            $("#descuento").val(0);
+            CalcularTotal();
+        } else {
+            $('#totalGeneral').val(total.toFixed(2));
+            $('#montoTotal').val(total.toFixed(2));
+            $('#montoFactura').val(total.toFixed(2));
+
+            $('#lblTotal').html("Total (Bs): " + total.toFixed(2));
+        }
+
+    }
+
+
+    var TipoPediVenta;
+    function OpcionCheck() {
+        $("#nropedido").val("");
+
+        if ($("#chkMesa").is(':checked')) {
+            TipoPediVenta = 1;
+            $("#OpcionDelivery").hide();
+        } else if ($("#chkLlevar").is(':checked')) {
+            TipoPediVenta = 2;
+            $("#OpcionDelivery").hide();
+        } else {
+            TipoPediVenta = 3;
+            $("#OpcionDelivery").show();
+        }
+
+    }
+
+
+    var estado, EstadoConfimar, EstadoFactura;
+    function GuardarVenta() {
+
+        ValidacionVenta();
+
+        if (estado) {
+            LimpiarTiposPagos();
+            $("#cambio").val(0);
+            $("#ModalDatosVenta").modal("show");
+        }
+
+    }
+
+    var Efectivo;
+    function EjecucionVenta() {
+        $("#btnFact").prop('disabled', false);
+        EstadoConfimar = true;
+
+        if (parseFloat($("#montoTransferencia").val()) > parseFloat($("#montoTotal").val())) {
+            swal("", "EL MONTO PAGADO CON TRANSFERENCIA NO PUEDE SER MAYOR AL MONTO TOTAL", "warning");
+            EstadoConfimar = false;
+        }
+        if (parseFloat($("#montoQr").val()) > parseFloat($("#montoTotal").val())) {
+            swal("", "EL MONTO PAGADO CON PAGO QR NO PUEDE SER MAYOR AL MONTO TOTAL", "warning");
+            EstadoConfimar = false;
+        }
+        if (parseFloat($("#montoTarjeta").val()) > parseFloat($("#montoTotal").val())) {
+            swal("", "EL MONTO PAGADO CON TARJETA NO PUEDE SER MAYOR AL MONTO TOTAL", "warning");
+            EstadoConfimar = false;
+        }
+
+
+        if ($("#checkTransf").is(':checked')) {
+            if ($("#nroTransferencia").val() == 0 || $("#idbancoTransf").val() == 0 || $("#nroTransferencia").val() == "") {
+                swal("", "INTRODUZCA DATOS CORRESPONDIENTES DE LA TRANSFERENCIA", "warning");
+                EstadoConfimar = false;
+            }
+
+        }
+        if ($("#checkQr").is(':checked')) {
+            if ($("#nroqr").val() == "" || $("#idbancoqr").val() == 0 || $("#nroqr").val() == 0) {
+                swal("", "INTRODUZCA DATOS CORRESPONDIENTES AL PAGO QR", "warning");
+                EstadoConfimar = false;
+            }
+
+        }
+        if ($("#checkTarjeta").is(':checked')) {
+            if ($("#referenciaTarjeta").val() == "" || $("#idbancoTarjeta").val() == 0 || $("#referenciaTarjeta").val() == 0) {
+                swal("", "INTRODUZCA DATOS CORRESPONDIENTES DE LA TARJETA", "warning");
+                EstadoConfimar = false;
+            }
+
+        }
+
+        var TotaltipoPago = parseFloat($("#montoBoliviano").val()) + parseFloat($("#montoDolarBs").val()) + parseFloat($("#montoTransferencia").val()) + parseFloat($("#montoQr").val()) + parseFloat($("#montoTarjeta").val());
+        Efectivo = parseFloat($("#montoBoliviano").val()) + parseFloat($("#montoDolarBs").val());
+
+        if (TotaltipoPago < parseFloat($("#montoTotal").val())) {
+            swal("", "DEBE COMPLETAR EL MONTO TOTAL", "warning");
+            EstadoConfimar = false;
+        }
+
+
+
+        if (EstadoConfimar) {
+            $("#nroTarjeta").prop('disabled', true);
+            if (PagoTarjeta != "") {
+                $("#nroTarjeta").prop('disabled', false);
+            }
+
+            if ($("#estadoFact").val() == 1) {
+
+                $("#ModalFacturacion").modal("show");
+                $('#metodopago').val(MetodoPagoConcat);
+                LimpiarDatosFacturacion();
+
+            } else {
+                GuardarVentaFactura();
+            }
+
+        }
+
+    }
+
+    var CodVenta;
+    function GuardarVentaFactura() {
+
+        verificarSesion();
+
+        var CodAlma = $('#idalmacen').val();
+        var DescripMesaCuenta = $('#mesaNro').html();
+
+        //// Venta
+
+        var TipoEstado = 1;
+        var tabla = $('#tbcomposicion').DataTable();
+        if (!tabla.data().any()) {
+            TipoEstado = 0;
+        }
+
+        var arrayVenta = [], ArrayDetalleVenta = [], ArraySubDetalle = [], ArrayPagos = [], ArrayFactura = [];
+
+        var objeto = {
+            CodAlma, CodClie: 1, Monto: parseFloat($("#total").val()), CodAlma, Efectivo: 0, Usuario: $("#usuario").val(), CodMesa: $("#CodMesa").val(),
+            CodVenta: $("#codVenta").val(), descripcionMesa: DescripMesaCuenta, CodCuen: $("#codCuenta").val()
+        };
+
+        arrayVenta.push(objeto);
+
+        ////// detalle
+        $("#tbproducto").find("tbody").find("tr").each(function () {
+            var idObs = $(this).find("td:eq(13)").html();
+            var objeto = {
+                CodProd: $(this).find("td:eq(6)").html(), Cantidad: $(this).find("td:eq(3)").html(), Precio: parseFloat($(this).find("td:eq(4)").html()), Descuento: 0,
+                TipoUnid: $(this).find("td:eq(10)").html(), CodAlma, TipClas: $(this).find("td:eq(9)").html(), NroProducto: $(this).find("td:eq(8)").html(), Nuevo: $(this).find("td:eq(11)").html(),
+                observacion: $('#' + idObs).val()
+            };
+            ArrayDetalleVenta.push(objeto);
+
+        });
+
+        ///// composicion
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+            var objeto = {
+                CodComp: $(this).find("td:eq(7)").html(), CodProd: $(this).find("td:eq(9)").html(), Cantidad: $(this).find("td:eq(4)").html(), Porcion: parseFloat($(this).find("td:eq(15)").html()), NroProducto: $(this).find("td:eq(6)").html(), TipoComp: $(this).find("td:eq(11)").html(), Precio: parseFloat($(this).find("td:eq(16)").html()),
+                CantidadProdPrincipal: $(this).find("td:eq(17)").html(), PrecioGeneral: parseFloat($(this).find("td:eq(18)").html()), TipClas: $(this).find("td:eq(19)").html(), CodProdPrincipal: $(this).find("td:eq(8)").html(), TipoEstado, Nuevo: $(this).find("td:eq(21)").html(), NC: $(this).find("td:eq(22)").html()
+            };
+            ArraySubDetalle.push(objeto);
+
+        });
+
+
+
+        //$.blockUI({ message: ' Por favor espere...' });
+
+        $("#loading").show();
+        //$("#ModalFacturacion").block({ message: "<img src='~/Content/Images/Xperto.png'>" });
+
+        $.ajax({
+            type: "POST", data: JSON.stringify({ DatoVenta: arrayVenta, DetalleVenta: ArrayDetalleVenta, DetalleComposicion: ArraySubDetalle, ProductoEliminado: arrayProductoEliminado }), dataType: 'JSON', cache: false, contentType: "application/json",
+            url: RutaURL('/Venta/GuardarVenta'),
+            success: function (data) {
+                if (data.dato > 0) {
+
+                    var url = RutaURL('/DetalleMesa/Index');
+                    window.location.href = url;
+                } else {
+                    $("#loading").hide();
+
+                    swal("", "ERROR EN LA TRANSACCION DE VENTA", "warning");
+                }
+            }
+        });
+
+    }
+
+
+
+    function mostrarBloqueador() {
+        $("#ModalFacturacion").block({ message: "Cargando..." });
+    }
+    function quitarBloqueador() {
+        //$.unblockUI();
+        $("#ModalFacturacion").unblock();
+    }
+
+    function FacturaImprimir(CodVent) {
+
+        var email = $("#email").val();
+        var EstadoEnvioFact, EstadoImprimir;
+
+        $("input[name=Selected]").each(function (index) {
+            EstadoEnvioFact = $(this).is(':checked');
+        });
+
+        $("input[name=SelectedImprimirFact]").each(function (index) {
+            EstadoImprimir = $(this).is(':checked');
+        });
+
+        $.ajax({
+            type: "POST", data: { CodVent, EstadoEnvioFact, email, EstadoImprimir }, dataType: 'JSON', async: false,
+            url: RutaURL('/Venta/ImprimirFactura'),
+            success: function (data) {
+                if (data.dato != "") {
+                    swal("", data.dato, "warning");
+                }
+
+            }
+        });
+
+    }
+
+    function FacturaImprimirPrueba(CodVent) {
+
+        var email = $("#email").val();
+        var EstadoEnvioFact, EstadoImprimir;
+
+        $("input[name=Selected]").each(function (index) {
+            EstadoEnvioFact = $(this).is(':checked');
+        });
+
+        $("input[name=SelectedImprimirFact]").each(function (index) {
+            EstadoImprimir = $(this).is(':checked');
+        });
+
+        //$('#loading-overlay').show();
+
+        //$.ajax({
+        //    async: false,
+        //    beforeSend: function () {
+        //        $("#ModalFacturacion").block({ message: "Cargando..." });
+        //    }
+        //});
+
+        $("#ModalFacturacion").block({ message: "Cargando..." });
+        $.ajax({
+            type: "POST", data: { CodVent, EstadoEnvioFact, email, EstadoImprimir }, dataType: 'JSON',
+            url: RutaURL('/Venta/ImprimirFactura'),
+            success: function (data) {
+                if (data.dato != "") {
+                    swal("", data.dato, "warning");
+                }
+                $("#ModalFacturacion").unblock();
+            }
+        });
+    }
+
+
+    function RptNotaVenta(codVenta) {
+        //let url = RutaURL('/Venta/ReporteNotaVenta?codventa=' + codVenta + '');
+        ////window.open(url, '_blank','popup');
+        //window.open(url, '_blank');
+
+        $.ajax({
+            type: "POST", data: { codVenta }, dataType: 'JSON', async: false, cache: false,
+            url: RutaURL('/Venta/ReporteNotaVenta'),
+            success: function (data) {
+                if (data.dato != "") {
+                    swal("", data.dato, "warning");
+                }
+            }
+        });
+
+    }
+
+    function ReporteComandaPrueba(codVenta) {
+        let url = RutaURL('/Venta/ReporteComandaPrueba?codventa=' + codVenta + '');
+        window.open(url, '_blank');
+    }
+
+    function Factura() {
+
+        EstadoFactura = true;
+
+
+        $("input[name=Selected]").each(function (index) {
+            if ($(this).is(':checked') && $("#email").val() == "") {
+                swal("", "INTRODUCIR DATOS DE CORREO", "warning");
+                EstadoFactura = false;
+            }
+        });
+
+        if ($("#nroDocu").val() == "") {
+            swal("", "REGISTRE NUMERO DE DOCUMENTO PARA LA FACTURA", "warning");
+            EstadoFactura = false;
+        }
+        if ($("#nroTarjeta").val() == "" && PagoTarjeta != "") {
+
+            swal("", "INTRODUZCA EL NUMERO DE TARJETA UTILIZADA PARA EL PAGO", "warning");
+            EstadoFactura = false;
+
+        }
+        if ($("#razonSocial").val() == "") {
+            swal("", "INTRODUZCA RAZON SOCIAL", "warning");
+            EstadoFactura = false;
+        }
+
+
+        if (EstadoFactura) {
+            /*  $("#alerta").show();*/
+
+            GuardarVentaFactura();
+        }
+
+
+    }
+
+
+    var PagoEfec, PagoTransferencia, PagoTarjeta, MetodoPagoConcat;
+    function OpcionCheckDatosVenta() {
+
+        /*   $("#op1").find("*").prop("disabled", true);*/
+        MetodoPagoConcat = "", PagoTransferencia = "", PagoTarjeta = "", PagoEfec = "";
+
+        $("#montoBoliviano").prop('disabled', true);
+        $("#montodolar").prop('disabled', true);
+        $("#montoDolarBs").prop('disabled', true);
+
+        $("#montoTransferencia").prop('disabled', true);
+        $("#nroTransferencia").prop('disabled', true);
+        $("#idbancoTransf").prop('disabled', true);
+
+        $("#montoQr").prop('disabled', true);
+        $("#nroqr").prop('disabled', true);
+        $("#idbancoqr").prop('disabled', true);
+
+        $("#montoTarjeta").prop('disabled', true);
+        $("#idtipotarjeta").prop('disabled', true);
+        $("#idbancoTarjeta").prop('disabled', true);
+        $("#referenciaTarjeta").prop('disabled', true);
+
+        if ($("#checkBs").is(':checked')) {
+            $("#montoBoliviano").prop('disabled', false);
+            PagoEfec = "EFECTIVO";
+        }
+        else {
+            $("#montoBoliviano").val("0.00");
+        }
+        if ($("#checkDolar").is(':checked')) {
+            $("#montodolar").prop('disabled', false);
+            $("#montoDolarBs").prop('disabled', false);
+        } else {
+            $("#montodolar").val("0.00");
+            $("#montoDolarBs").val("0.00");
+        }
+        if ($("#checkTransf").is(':checked')) {
+            $("#montoTransferencia").prop('disabled', false);
+            $("#nroTransferencia").prop('disabled', false);
+            $("#idbancoTransf").prop('disabled', false);
+            PagoTransferencia = "TRANSFERENCIA BANCARIA";
+        } else {
+            $("#montoTransferencia").val("0.00");
+            $("#nroTransferencia").val("0");
+        }
+        if ($("#checkQr").is(':checked')) {
+            $("#montoQr").prop('disabled', false);
+            $("#nroqr").prop('disabled', false);
+            $("#idbancoqr").prop('disabled', false);
+            PagoTransferencia = "TRANSFERENCIA BANCARIA";
+        } else {
+            $("#montoQr").val("0.00");
+            $("#nroqr").val("0");
+        }
+        if ($("#checkTarjeta").is(':checked')) {
+            $("#montoTarjeta").prop('disabled', false);
+            $("#idtipotarjeta").prop('disabled', false);
+            $("#idbancoTarjeta").prop('disabled', false);
+            $("#referenciaTarjeta").prop('disabled', false);
+            PagoTarjeta = "TARJETA";
+        } else {
+            $("#montoTarjeta").val("0.00");
+            $("#referenciaTarjeta").val("0");
+        }
+        CalcularCambio();
+
+        MetodoPagoConcat = PagoEfec + "  " + PagoTransferencia + "  " + PagoTarjeta;
+
+        MetodoPagoConcat = MetodoPagoConcat.trimLeft();
+
+    }
+
+    function ValidacionVenta() {
+
+        var codAlmacen = $('#idalmacen').val();
+        estado = true;
+
+        var tabla = $('#tbproducto').DataTable();
+        if (!tabla.data().any()) {
+            swal("", "DEBE SELECCIONAR PRODUCTO", "warning");
+            estado = false;
+        }
+
+        if (parseFloat($("#totalGeneral").val()) <= 0) {
+            swal("", "NO SE PUEDE REALIZAR UNA VENTA CON MONTO 0", "warning");
+            estado = false;
+        }
+        if ($("#chkDelivery").is(':checked') && $("#nropedido").val() == "") {
+            swal("", "INTRODUCIR NRO DE PEDIDO DE DELIVERY", "warning");
+            estado = false;
+        }
+        if ($("#chkDelivery").is(':checked') && $("#idDelivery").val() == 0) {
+            swal("", "DEBE SELECCIONAR EMPRESA DELIVERY", "warning");
+            estado = false;
+        }
+
+        if ($("#idcliente").val() == 0) {
+            swal("", "SELECCIONAR CLIENTE", "warning");
+            estado = false;
+        }
+
+
+        var producto = "";
+        $("#tbproducto").find("tbody").find("tr").each(function () {
+
+            var Stock = 0;
+
+            if ($(this).find("td:eq(8)").html() != 9 && $(this).find("td:eq(8)").html() != 8 && $(this).find("td:eq(8)").html() != 3 && $(this).find("td:eq(8)").html() != 4) {
+
+                var codProd = $(this).find("td:eq(5)").html();
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+                    url: RutaURL('/Venta/VerificarStock'),
+                    success: function (data) {
+
+                        Stock = data.data;
+
+                    }
+                });
+                if (Stock < parseFloat($(this).find("td:eq(2)").html())) {
+                    if (producto.length > 1) {
+                        producto = producto + "," + codProd;
+                    } else {
+                        producto = codProd;
+                    }
+                }
+
+            }
+
+        });
+
+        if (producto.length > 0) {
+
+            $.ajax({
+                type: "POST", dataType: 'json', data: { producto }, async: false,
+                url: RutaURL('/Venta/ObtenerProducto'),
+                success: function (data) {
+                    swal("", "NO EXISTE CANTIDAD SUFICIENTE DEL PRODUCTO " + data.dato, "warning");
+                    estado = false;
+                }
+            });
+
+        }
+
+    }
+
+
+    var EstadoProdHomolog;
+    function VerificarProductoHomologado(codProd) {
+
+        EstadoProdHomolog = true;
+        $.ajax({
+            type: "POST", dataType: 'json', data: { CodProducto }, async: false,
+            url: RutaURL('/Venta/VerificarProductoHomologado'),
+            success: function (data) {
+                if (data.dato == 2) {
+                    swal("", "EL PRODUCTO SELECCIONADO NO ESTA HOMOLOGADO PARA FACTURACION, COMUNIQUESE CON ADMINISTRACIÓN.", "warning");
+                    EstadoProdHomolog = false;
+                    $("#cantidad").val(0);
+                }
+            }
+        });
+
+    }
+
+    $("#montodolar").on('keyup', function (e) {
+        var dolar = $("#montodolar").val();
+        var calculo = dolar * 6.96;
+        $("#montoDolarBs").val(calculo.toFixed(2));
+    });
+
+    function LimpiarTiposPagos() {
+        $("#checkBs").prop("checked", true);
+        $("#checkDolar").prop("checked", false);
+        $("#checkTransf").prop("checked", false);
+        $("#checkQr").prop("checked", false);
+        $("#checkTarjeta").prop("checked", false);
+        $("#observacion").val("");
+
+        OpcionCheckDatosVenta();
+        $("#montoBoliviano").val("0.00");
+        $('#codigo-qr').empty();
+    }
+
+    function Cancelar() {
+        var tablaProd = $('#tbproducto').DataTable();
+        var tablaComp = $('#tbcomposicion').DataTable();
+        tablaProd.clear().draw();
+        tablaComp.clear().draw();
+        $('#producto').remove();
+        $('#composicion').remove();
+        $("#clasificacion").children().prop('disabled', false);
+
+        $("#total").val("0.00");
+        $("#descuento").val("0.00");
+        $("#totalGeneral").val("0.00");
+        $("#descuento").prop('disabled', true);
+        $("#AceptarVenta").prop('disabled', false);
+    }
+
+    function CalcularCambio() {
+        var Calculo = (parseFloat($("#montoBoliviano").val()) + parseFloat($("#montoDolarBs").val()) + parseFloat($("#montoTransferencia").val()) + parseFloat($("#montoQr").val()) + parseFloat($("#montoTarjeta").val())) - parseFloat($("#montoTotal").val());
+        $("#cambio").val(Calculo.toFixed(2));
+    }
+
+    $("#montoBoliviano").on('keyup', function (e) {
+        CalcularCambio();
+    });
+
+    $("#montodolar").on('keyup', function (e) {
+        CalcularCambio();
+    });
+
+    $("#montoTransferencia").on('keyup', function (e) {
+        CalcularCambio();
+    });
+
+    $("#montoQr").on('keyup', function (e) {
+        CalcularCambio();
+    });
+
+    $("#montoTarjeta").on('keyup', function (e) {
+        CalcularCambio();
+    });
+
+
+    function ObtenerDatoDocuPrueba(e) {
+        $('#complemento').val("");
+        $('#razonSocial').val("");
+        $('#email').val("");
+        $('#nroTarjeta').val("");
+        if (e.keyCode == 13 || e.keyCode == 9) {
+            e.preventDefault();
+            var nroDocu = $("#nroDocu").val();
+            $.ajax({
+                type: "POST", dataType: 'json', data: { nroDocu }, async: false,
+                url: RutaURL('/Venta/DatosCliente'),
+                success: function (data) {
+                    $.each(data, function () {
+                        $('#complemento').val(this.complemento);
+                        $('#razonSocial').val(this.razon_social);
+                        if (this.razon_social == "") {
+                            $('#razonSocial').val(this.Nombre);
+                        }
+                        $('#email').val(this.email_envio);
+                    })
+                }
+            });
+        }
+    }
+
+    function ObtenerDatoDocu() {
+        $('#complemento').val("");
+        $('#razonSocial').val("");
+        $('#email').val("");
+        $('#nroTarjeta').val("");
+
+        var nroDocu = $("#nroDocu").val();
+        $.ajax({
+            type: "POST", dataType: 'json', data: { nroDocu }, async: false,
+            url: RutaURL('/Venta/DatosCliente'),
+            success: function (data) {
+                $.each(data, function () {
+                    $('#complemento').val(this.complemento);
+                    $('#razonSocial').val(this.razon_social);
+                    if (this.razon_social == "") {
+                        $('#razonSocial').val(this.Nombre);
+                    }
+                    $('#email').val(this.email_envio);
+
+                })
+            }
+        });
+    }
+
+    $("#nroDocu").on('keyup', function (e) {
+        ObtenerDatoDocu();
+    });
+
+    function LimpiarDatosFacturacion() {
+        $('#nroDocu').val("");
+        $('#complemento').val("");
+        $('#razonSocial').val("");
+        $('#email').val("");
+        $('#nroTarjeta').val("");
+
+    }
+
+    function GenerarQr() {
+        $('#codigo-qr').empty();
+        const codigoQRDiv = document.getElementById('codigo-qr');
+        const codigoQR = new QRCode(codigoQRDiv, {
+            text: 'Christian IRvin',
+            width: 128,
+            height: 128
+        });
+        $('#codigo-qr').removeAttr('title');
+    }
+
+
+    $("#nroTarjeta").on('keyup', function (e) {
+        var nro = $("#nroTarjeta").val();
+        if (nro.length == 4) {
+            nro += "00000000";
+            $("#nroTarjeta").val(nro);
+        }
+    });
+
+
+
+    ////////////////////
+
+    function ObtenerDetalleVenta() {
+        var tabla = $('#tbproducto').DataTable();
+        var codVenta = $('#codVenta').val();
+        var numero = 0, mesa = 0, total = 0;
+        ContadorIndex = 0;
+        $('#btnPrecuenta').hide();
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codVenta }, async: false,
+            url: RutaURL('/Venta/ObtenerDetalleVenta'),
+            success: function (data) {
+
+                tabla.clear().draw();
+                $.each(data, function () {
+
+                    total += parseFloat(this.Subtotal);
+                    ContadorIndex += 1;
+                    IdGlobalObs += 1;
+
+                    tabla.row.add([
+                        numero += 1, this.NombreProducto, this.observacion,
+                        this.Cantidad, parseFloat(this.Precio).toFixed(2), parseFloat(this.Subtotal).toFixed(2), this.CodProd,
+                        '<button type="button" class="btn btn-danger btn-xs" onclick="Borrarfila(' + numero + ',\'' + ContadorIndex + '\',\'' + this.CodProd + '\',\'' + this.Cod_Decv + '\',\'' + this.NombreProducto + '\',\'' + this.Cantidad + '\',\'' + this.codUsuaDetalle + '\')"> <span class="fas fa-times"></span> </button>', ContadorIndex, this.TipClas, this.TipoUnid, 0, this.Cod_Decv, IdGlobalObs, this.codUsuaDetalle
+
+                    ]).draw(false);
+
+                })
+            }
+        });
+
+        tabla.order([8, 'asc']).draw();
+
+        $('#lblTotal').html("Total (Bs): " + parseFloat(total).toFixed(2));
+        $('#total').val(total.toFixed(2));
+
+        $('#cantReg').html(numero);
+
+        $('#tbproducto tr > *:nth-child(7)').hide();
+        $('#tbproducto tr > *:nth-child(9)').hide();
+        $('#tbproducto tr > *:nth-child(10)').hide();
+        $('#tbproducto tr > *:nth-child(11)').hide();
+        $('#tbproducto tr > *:nth-child(12)').hide();
+        $('#tbproducto tr > *:nth-child(13)').hide();
+        $('#tbproducto tr > *:nth-child(14)').hide();
+        $('#tbproducto tr > *:nth-child(15)').hide();
+
+        if (tabla.data().any()) {
+            $('#btnPrecuenta').show();
+        }
+
+    }
+
+    function ObtenerDetalleComposicion(codVenta, codprod, contadorIndex, CodDecv) {
+        var numero = 0, numComp = 0;
+        var tabla = $('#tbcomposicion').DataTable();
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codVenta, codprod, CodDecv }, async: false,
+            url: RutaURL('/Producto/ObtenerDetalleComposicion'),
+            success: function (data) {
+
+                //tabla.clear().draw();
+                $.each(data, function () {
+
+                    tabla.row.add([
+                        0, this.producto, this.Tipo, this.Nombre, this.cant_uni,
+                        "", contadorIndex, 0, this.Cod_Prod, this.Cod_ProdComp, this.cant_uni, 1, 0, 0, 1, 1, 0, 1, 1, 1, numComp += 1, 0
+                    ]).draw(false);
+                })
+            }
+        });
+        $('#tbcomposicion tr > *:nth-child(21)').hide();
+        //$('#tbcomposicion tr > *:nth-child(22)').hide();
+
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+            numero += 1;
+            $(this).find("td:eq(0)").html(numero);
+        });
+
+        DeshabilitarColumns();
+    }
+
+    $("#txtBuscarProducto").on('keyup', function (e) {
+        var nombre = $('#txtBuscarProducto').val();
+        ObtenerProducto(0);
+    });
+
+    function CancelarPedido() {
+
+        swal({
+            title: "",
+            text: "La venta no se ha registrado.¿seguro que desea salir?",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Salir",
+            cancelButtonText: "Cancelar",
+        }).then(function () {
+
+            var url = RutaURL('/DetalleMesa/Index');
+            window.location.href = url;
+
+        }).catch(function () {
+
+        });
+
+    }
+
+    function InicioMesa() {
+        window.location.href = RutaURL('/DetalleMesa/Index');
+    }
+
+    function ConfirmacionVenta() {
+
+
+        VAlidarGuardarVenta();
+        if (EstadoConfimar) {
+
+            swal({
+                title: "",
+                text: "Está seguro de guardar el registro?",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonText: "SI",
+                cancelButtonText: "NO",
+            }).then(function () {
+
+                GuardarVentaFactura();
+
+            }).catch(function () {
+
+            });
+
+        }
+
+    }
+
+    function ImprimirPrecuenta() {
+        var codVenta = $('#codVenta').val();
+
+        $.ajax({
+            type: "POST", data: { codVenta }, dataType: 'JSON', async: false, cache: false,
+            url: RutaURL('/Venta/OpcionPrecuenta'),
+            success: function (data) {
+
+            }
+        });
+
+
+        //Visualizacion reporte
+        //let url = RutaURL('/Venta/ReportePrecuenta?codventa=' + codVenta + '');
+        //window.open(url, '_blank');
+
+    }
+
+
+    function VAlidarGuardarVenta() {
+
+        EstadoConfimar = true;
+        var tabla = $('#tbcomposicion').DataTable();
+        var ArrayComposicion = [];
+
+        var codAlmacen = $('#idalmacen').val();
+        var producto = "";
+
+
+
+        let productosAgrupados = {};
+
+        $("#tbproducto").find("tbody").find("tr").each(function () {
+            let codProd = $(this).find("td:eq(6)").html();
+            let tipo = $(this).find("td:eq(9)").html();
+            let compuesto = $(this).find("td:eq(11)").html();
+            let cantidad = parseFloat($(this).find("td:eq(3)").html()) || 0;
+
+            if (productosAgrupados[codProd]) {
+                productosAgrupados[codProd].cantidad += cantidad;
+            } else {
+                productosAgrupados[codProd] = {
+                    cantidad: cantidad,
+                    tipo: tipo,
+                    compuesto
+                };
+            }
+        });
+
+        for (let codProd in productosAgrupados) {
+
+            var Stock = 0;
+
+            if (productosAgrupados[codProd].tipo != 9 || productosAgrupados[codProd].tipo != 8 || productosAgrupados[codProd].tipo != 3 || productosAgrupados[codProd].tipo != 4 || productosAgrupados[codProd].tipo == 1) {
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+                    url: RutaURL('/Venta/VerificarStock'),
+                    success: function (data) {
+                        Stock = data.data;
+                    }
+                });
+
+                if (Stock < parseFloat(productosAgrupados[codProd].cantidad)) {
+
+                    if (producto.length > 1) {
+                        producto = producto + "," + codProd;
+                    } else {
+                        producto = codProd;
+                    }
+                }
+
+            }
+
+            if (productosAgrupados[codProd].compuesto == 1) { //verificar compuestos obligatorios
+
+                var codProdPrincipal = codProd;
+                var CantidadPrincipal = productosAgrupados[codProd].cantidad;
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProdPrincipal }, async: false,
+                    url: RutaURL('/Producto/ObtenerListaCompuesto'),
+                    success: function (data) {
+                        $.each(data, function () {
+
+                            var porcion = parseFloat(this.Porcion) * parseFloat(CantidadPrincipal);
+                            objeto = {
+                                CodProd: this.Cod_Prod, Cantidad: porcion
+                            };
+
+                            ArrayComposicion.push(objeto);
+                        })
+                    }
+                });
+
+            }
+
+        }
+
+
+        //$("#tbproducto").find("tbody").find("tr").each(function () {
+
+
+        //    var Stock = 0;
+
+        //    if ($(this).find("td:eq(9)").html() != 9 && $(this).find("td:eq(9)").html() != 8 && $(this).find("td:eq(9)").html() != 3 && $(this).find("td:eq(9)").html() != 4 && $(this).find("td:eq(11)").html() == 1) {
+
+        //        var codProd = $(this).find("td:eq(6)").html();
+
+        //        $.ajax({
+        //            type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+        //            url: RutaURL('/Venta/VerificarStock'),
+        //            success: function (data) {
+        //                Stock = data.data;
+        //            }
+        //        });
+        //        if (Stock < parseFloat($(this).find("td:eq(3)").html())) {
+        //            if (producto.length > 1) {
+        //                producto = producto + "," + codProd;
+        //            } else {
+        //                producto = codProd;
+        //            }
+        //        }
+
+        //    }
+
+
+        //    if ($(this).find("td:eq(11)").html() == 1) { //verificar compuestos obligatorios
+
+        //        var codProdPrincipal = $(this).find("td:eq(6)").html();
+        //        var CantidadPrincipal = $(this).find("td:eq(3)").html();
+
+        //        $.ajax({
+        //            type: "POST", dataType: 'json', data: { codProdPrincipal }, async: false,
+        //            url: RutaURL('/Producto/ObtenerListaCompuesto'),
+        //            success: function (data) {
+        //                $.each(data, function () {
+
+        //                    var porcion = parseFloat(this.Porcion) * parseFloat(CantidadPrincipal);
+
+        //                    objeto = {
+        //                        CodProd: this.Cod_Prod, Cantidad: porcion
+        //                    };
+
+        //                    ArrayComposicion.push(objeto);
+        //                })
+        //            }
+        //        });
+
+        //    }
+
+        //});
+
+
+        /////calculoComposicion
+
+
+        var idAlmacen = $("#idalmacen").val();
+
+        var cant = 0, NroProdAnterior = 0;
+
+
+        if (tabla.data().any()) { //si hay registros opcionales
+
+            $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+                var codProdPrincipal = $(this).find("td:eq(8)").html();
+                var NroProd = $(this).find("td:eq(6)").html();
+                var CantidadPrincipal = parseFloat($(this).find("td:eq(17)").html());
+
+                cant = parseFloat($(this).find("td:eq(15)").html()) * parseFloat($(this).find("td:eq(17)").html());
+
+
+                var objeto = {
+                    CodProd: $(this).find("td:eq(9)").html(), Cantidad: cant
+                };
+                ArrayComposicion.push(objeto);
+
+                if (NroProd != NroProdAnterior) {
+                    $.ajax({
+                        type: "POST", dataType: 'json', data: { codProdPrincipal }, async: false,
+                        url: RutaURL('/Producto/ObtenerListaCompuesto'),
+                        success: function (data) {
+                            $.each(data, function () {
+
+                                var pocion = parseFloat(this.Porcion) * parseFloat(CantidadPrincipal);
+                                objeto = {
+                                    CodProd: this.Cod_Prod, Cantidad: pocion
+                                };
+                                ArrayComposicion.push(objeto);
+                            })
+                        }
+                    });
+                }
+
+                NroProdAnterior = $(this).find("td:eq(6)").html();
+
+            });
+
+        }
+
+
+
+        $.ajax({
+            type: "POST", data: JSON.stringify({ DatoComposicion: ArrayComposicion, idAlmacen }), dataType: 'JSON', async: false, cache: false, contentType: "application/json",
+            url: RutaURL('/Producto/DatosComposicion'),
+            success: function (data) {
+                $.each(data, function () {
+
+                    producto = this.producto;
+                })
+            }
+        });
+
+        /////////
+
+        if (producto.length > 0) {
+            $.ajax({
+                type: "POST", dataType: 'json', data: { producto }, async: false,
+                url: RutaURL('/Venta/ObtenerProducto'),
+                success: function (data) {
+                    swal("", "NO EXISTE CANTIDAD SUFICIENTE DEL PRODUCTO " + data.dato, "warning");
+                    EstadoConfimar = false;
+                }
+            });
+        }
+
+        var codMesa = $("#CodMesa").val();
+        var codVenta = $("#codVenta").val();
+
+        if ($("#UsoCodigoUsuario").val() == false) {
+
+            $.ajax({
+                type: "POST", dataType: 'json', data: { codMesa, usuario: $("#usuario").val(), codVenta, CodCuen: $("#codCuenta").val() }, async: false,
+                url: RutaURL('/DetalleMesa/EstadoMesa'),
+                success: function (data) {
+                    if (data.data) {
+                        if ($("#codCuenta").val() > 0) {
+                            swal("", "La cuenta ya está en uso.", "warning");
+                        } else {
+                            swal("", "La mesa ya está en uso.", "warning");
+                        }
+                        EstadoConfimar = false;
+                    }
+                }
+            });
+
+        }
+
+
+
+
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codVenta }, async: false,
+            url: RutaURL('/DetalleMesa/EstadoVentaMesa'),
+            success: function (data) {
+                if (data.data == 2) {
+                    swal("", "La Venta ya ha sido cancelada.", "warning");
+                    EstadoConfimar = false;
+                }
+            }
+        });
+
+        var tabla = $('#tbproducto').DataTable();
+        if (!tabla.data().any()) {
+            swal("", "Debe agregar producto.", "warning");
+            EstadoConfimar = false;
+        }
+
+    }
+
+
+    var TextoObservacion;
+    function Opcionllevar() {
+        TextoObservacion = "";
+
+        //$("#txtObservacion").prop('disabled', true);
+        if (estadoColor) {
+            $("#btnLlevar").css("background-color", "green");
+            estadoColor = false;
+            TextoObservacion = "PARA LLEVAR";
+        } else {
+            $("#btnLlevar").css("background-color", "aliceblue");
+            $("#txtObservacion").val("");
+            estadoColor = true;
+        }
+
+    }
+
+    function opcionObservacion() {
+
+        $("#txtObservacion").show();
+        $("#txtObservacion").val("");
+        $("#txtObservacion").prop('disabled', false);
+        $("#txtObservacion").focus();
+
+    }
+
+    function opcionListaObservacion() {
+
+        $("#txtObservacion").show();
+        $("#txtObservacion").val("");
+        TextconcObservacion = "";
+        $("#txtConcatenarObser").val("");
+
+        $("#ModalListaObservacion").modal("show");
+        $("#NombProducto").val(Producto);
+    }
+
+
+    function ListarObservaciones() {
+
+        $('#DatoObservacion').remove();
+
+        var dato = '<div class="form-group" id="DatoObservacion"></div >';
+        $('#OpObservacion').append(dato);
+
+
+        $.ajax({
+            type: "POST", dataType: 'json', async: false,
+            url: RutaURL('/Producto/ListarObservaciones'),
+            success: function (data) {
+
+                $.each(data, function () {
+                    var dato = '<button type="button" style="width:140px;height:80px; font-size: 14px;font-weight:bold" class="btn btn-default btn-sm margen" onclick="ObtenerDatoObservacion(\'' + this.Nombre.trim() + '\')"> ' + this.Nombre + ' </button> ';
+                    $('#DatoObservacion').append(dato);
+                })
+            }
+        });
+
+    }
+
+    var TextconcObservacion;
+    function ObtenerDatoObservacion(Observacion) {
+
+        var TextObservacion = " - " + Observacion;
+        TextconcObservacion += TextObservacion;
+        $("#txtConcatenarObser").val(TextconcObservacion);
+        //$("#txtConcatenarObser").focus();
+
+    }
+
+    function AceptarObservacion() {
+        var obs = $("#txtConcatenarObser").val();
+        $("#txtObservacion").val(obs);
+        $("#ModalListaObservacion").modal("hide");
+        ObservacionProducto = obs;
+    }
+
+    function LimpiarObservacion() {
+        TextconcObservacion = "";
+        $("#txtConcatenarObser").val("");
+    }
+
+    function AceptarCodigoUser() {
+        var PinUsuarioEliminar = $("#PinUsuarioEliminar").val();
+        var CodigoUser;
+        $.ajax({
+            type: "POST", dataType: 'json', data: { CoduserDetalle }, async: false,
+            url: RutaURL('/Venta/ObtenerCodigoUser'),
+            success: function (data) {
+
+                $.each(data, function () {
+                    CodigoUser = this.codigo;
+                    LoginDetalle = this.Usuario;
+                })
+
+            }
+        });
+
+        if (parseFloat(CodigoUser) == parseFloat(PinUsuarioEliminar)) {
+            $("#ModalUserCodigo").modal("hide");
+            $("#ModalObservacion").modal("show");
+        } else {
+            swal("", "El pin de usuario es incorrecto", "warning");
+        }
+
+    }
+
+    function mayus(e) {
+        e.value = e.value.toUpperCase();
+    }
+
+    function convertToUpper(input) {
+        let cursorPos = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        input.setSelectionRange(cursorPos, cursorPos);
+    }
+
+
+
+    function ResumenPedido() {
+        $("#ModalCarritoPedido").modal("show");
+    }
+    //$(".content-wrapper").click(function () {
+    //    $("#control_sidebar").ControlSidebar('collapse');
+    //});
+
+</script>

@@ -1,0 +1,55 @@
+﻿<script>
+
+    self.onload = function () {
+        $("#ModalInicioDia").modal("show");
+        ObtenerDato();
+    }
+
+    var codIndi;
+    function ObtenerDato() {
+        var monto;
+        $.ajax({
+            type: "POST", dataType: "JSON", async: false, cache: false,
+            url: RutaURL('/CierreCaja/ObtenerDatoInicioDia'),
+            success: function (data) {
+
+                $.each(data, function () {
+
+                    $("#fechaInicio").val(this.FechaInicio);
+                    $("#fechaApertura").val(this.FechaApertura);
+                    monto = this.Monto;
+                    $("#montoInicial").val(monto.toFixed(2));
+
+                    codIndi = this.cod_indi;
+                    if (this.Abierto) {
+                        $("#montoInicial").prop('disabled', true);
+                        $("#guardarInicio").hide();
+                    }
+                })
+            }
+
+        });
+
+    }
+
+    function GuardarInicio() {
+
+        var monto = parseFloat($("#montoInicial").val());
+
+        $.ajax({
+            type: "POST", data: { monto, codIndi} , dataType: "JSON", async: false, cache: false,
+            url: RutaURL('/CierreCaja/GuardarInicioDia'),
+            success: function (data) {
+                if (data.dato==1) {
+                    $("#ModalInicioDia").modal("hide");
+                    swal("", "SE GUARDARON LOS DATOS CORRECTAMENTE", "warning");
+                } else {
+                    swal("","ERROR AL GUARDAR LOS DATOS","warning");
+                }      
+            }
+        });
+
+    }
+
+
+</script>

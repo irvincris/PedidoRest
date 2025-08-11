@@ -1,0 +1,59 @@
+﻿
+@{
+    ViewBag.Title = "Inicio";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="content-header">
+
+    <div class="panel-body" >
+
+        <div class="row">
+            <div class="form-group row-cols-md-6 col-lg-12">
+                <u style="font-weight:bold;font-style:italic">OPERACION DE VENTA:</u>
+            </div>
+            <input type="text" class="form-control" id="usuario" value="@Session["usuario"]" hidden>
+            <input type="text" class="form-control" id="idalmacen" value="@Session["idalmacen"]" hidden>
+            <input type="text" class="form-control" id="estado" value="@ViewBag.Estado" hidden>
+            <div class="form-group row-cols-md-6 col-lg-6">
+                <button type="button" class="btn btn-primary btn-lg" style="border-color:black;width:140px;height:50px" onclick="Inicio()"> VENTA</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*<script src="~/Scripts/Inicio.js"></script>*@
+
+<script>
+
+    self.onload = function () {
+        if ($("#estado").val()==1) {
+            ValidarInicioDia();
+        }
+    }
+
+    function Inicio() {
+        //var url = RutaURL('/Venta/Index');
+        //window.location.href = url;
+        ValidarInicioDia();
+    }
+
+    function ValidarInicioDia() {
+        var usuario = $("#usuario").val();
+        var CodAlmacen = $("#idalmacen").val();
+
+        $.ajax({
+            type: "POST", data: { usuario, CodAlmacen }, dataType: 'JSON', async: false, cache: false,
+            url: RutaURL('/CierreCaja/ValidarInicioCaja'),
+            success: function (data) {
+                if (data.dato == true) {
+                    var url = RutaURL('/Venta/Index');
+                    window.location.href = url;
+                } else {
+                    swal("", "INGRESE EL MONTO DE APERTURA", "warning");
+                }
+            }
+        });
+    }
+
+</script>

@@ -1,0 +1,118 @@
+﻿<script>
+
+    self.onload = function () {
+        ObenerDetalleCaja();
+    }
+
+    function ObenerDetalleCaja() {
+
+        $.ajax({
+            type: "POST", dataType: 'json', async: false,
+            url: RutaURL('/CierreCaja/ObtenerDetalleCaja'),
+            success: function (data) {
+
+                $.each(data, function () {
+                    $('#ventaContado').val(this.VentasDia.toFixed(2));
+                    $('#ventaCredito').val(this.Ventacredito.toFixed(2));
+                    $('#aCuenta').val(this.Acuenta.toFixed(2));
+                    $('#saldo').val(this.SaldoCredito.toFixed(2));
+                    $('#cortesia').val(this.Cortesia.toFixed(2));
+                    $('#anticipoPedido').val(this.AnticipoPedido.toFixed(2));
+                    $('#montoInicial').val(this.MontoInicial.toFixed(2));
+                    $('#efectivo').val(this.AbonosEfectivo.toFixed(2));
+                    $('#tarjeta').val(this.AbonosTarjeta.toFixed(2));
+                    $('#cuentaCorriente').val(this.AbonoCuentaCorriente.toFixed(2));
+                    $('#transferencia').val(this.AbonoTransferencia.toFixed(2));
+                    $('#pagoqr').val(this.AbonoPagoQr.toFixed(2));
+                    $('#totalAbono').val(this.TotalAbono.toFixed(2));
+                    $('#ventaDia').val(this.Ventadia.toFixed(2));
+                    $('#ventaPasada').val(this.VentaPasada.toFixed(2));
+                    $('#otrosIngresos').val(this.OtrosIngresos.toFixed(2));
+                    $('#gastos').val(this.Gastos.toFixed(2));
+                    $('#totalRendir').val(this.TotalEntregar.toFixed(2));
+                    $('#totalVenta').val(this.TotalVenta.toFixed(2));
+                    $('#totalEfectivo').val(this.TotalEfectivo.toFixed(2));
+                    $('#totalTarjeta').val(this.AbonosTarjeta.toFixed(2));
+                })
+
+            }
+        });
+    }
+
+    $("#entregadoDolar").on('keyup', function (e) {
+
+        var MontoDolar = $("#entregadoDolar").val();
+        $("#entregadoDolarBs").val(parseFloat(MontoDolar) * 6.96);
+        CalculoTotalEntregado();
+    });
+
+    $("#entregadobs").on('keyup', function (e) {
+        CalculoTotalEntregado();
+    });
+    $("#totalTarjetaEntregado").on('keyup', function (e) {
+        CalculoTotalEntregado();
+    });
+    $("#cCorriente").on('keyup', function (e) {
+        CalculoTotalEntregado();
+    });
+    $("#transferenciaEntregado").on('keyup', function (e) {
+        CalculoTotalEntregado();
+    });
+    $("#pagoQrEntregado").on('keyup', function (e) {
+        CalculoTotalEntregado();
+    });
+
+    function CalculoTotalEntregado() {
+        var total = parseFloat($("#entregadobs").val()) + parseFloat($("#entregadoDolarBs").val()) + parseFloat($("#totalTarjetaEntregado").val()) + parseFloat($("#cCorriente").val()) + parseFloat($("#transferenciaEntregado").val()) + parseFloat($("#pagoQrEntregado").val());
+
+        $("#totalEntregado").val(total.toFixed(2));
+    }
+
+    function GuardarCierre() {
+        var CodAlma = $('#idalmacen').val();
+
+        swal({
+            //title: "",
+            text: "¿ESTA SEGURO DE REALIZAR EL CIERRE?",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonText: "OK"
+        }).then(function () {
+          
+            var arrayCierre = [];
+
+            var objeto = {
+                CodAlma, Usuario: $("#usuario").val(), Ingresos: $("#otrosIngresos").val(), Gastos: $("#gastos").val(), Saldo: $("#saldoCaja").val(), Entregado: $("#totalEntregado").val(),
+                Observacion: $("#observacion").val(), PagosTarjetas: $("#tarjeta").val(), Bolivianos: $("#entregadobs").val(), Dolares: $("#entregadoDolar").val(),
+                Cuentas: $("#cCorriente").val(), Transferencias: $("#transferenciaEntregado").val(), PagoQr: $("#pagoQrEntregado").val(), Efectivo: $("#efectivo").val()
+            };
+            arrayCierre.push(objeto);
+
+            $.ajax({
+                type: "POST", data: { DatoCierre: arrayCierre }, dataType: 'JSON', async: false, cache: false,
+                url: RutaURL('/CierreCaja/GuardarCierre'),
+                success: function (data) {
+                    if (data.dato > 0) {
+                        var url = RutaURL('/Inicio/Index');
+                        window.location.href = url;
+                    } else {
+                        swal("", "ERROR EN LA TRANSACCION DE CIERRE", "warning");
+                    }
+                }
+            });
+
+        }).catch(function () {
+    
+        });
+
+
+
+
+    }
+
+
+    function Prueba() {
+        alert(1);
+    }
+
+</script>

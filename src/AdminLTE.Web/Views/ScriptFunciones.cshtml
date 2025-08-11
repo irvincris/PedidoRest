@@ -1,0 +1,120 @@
+﻿<style type="text/css">
+
+    #OpcionProducto1 {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .tarjeta-producto {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        width: 100%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        text-align: left;
+        background-color: white;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+        .tarjeta-producto h3 {
+            margin-bottom: 10px;
+        }
+
+        .tarjeta-producto p {
+            margin: 5px 0;
+        }
+
+        .tarjeta-producto button {
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+            .tarjeta-producto button:hover {
+                background-color: #218838;
+            }
+
+    .info-producto {
+        display: flex;
+        justify-content: space-between;
+        font-weight: bold;
+    }
+
+    .nombre-producto {
+        flex: 1;
+    }
+
+    .precio-producto {
+        white-space: nowrap;
+    }
+
+
+
+
+
+    .categoria-lista {
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 10px;
+        padding: 10px;
+        white-space: nowrap;
+        cursor: pointer;
+        position: sticky;
+        /* justify-content: center;*/
+
+      
+        top: 70px;
+        background-color: white; /* Asegura que no se mezcle con el contenido al hacer scroll */
+        z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        padding: 10px 0;
+        border-bottom: 1px solid #ddd;
+    }
+
+        .categoria-lista:active {
+            cursor: grabbing;
+        }
+
+        .categoria-lista::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .categoria-lista::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+    .categoria-item {
+        flex: 0 0 auto;
+        scroll-snap-align: start;
+        background-color: #eee;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 20px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        font-weight: bold;
+    }
+
+        .categoria-item:hover {
+            background-color: #ddd;
+        }
+
+    .aspect {
+        width: 100%;
+        object-fit: contain;
+        object-position: center;
+    }
+</style>
+

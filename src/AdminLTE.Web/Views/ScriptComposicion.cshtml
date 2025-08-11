@@ -1,0 +1,233 @@
+﻿<script>
+
+    function VAlidarGuardarVenta() {
+
+        EstadoConfimar = true;
+
+        var codAlmacen = $('#idalmacen').val();
+        var producto = "";
+        $("#tbproducto").find("tbody").find("tr").each(function () {
+
+            var Stock = 0;
+            
+
+            if ($(this).find("td:eq(9)").html() != 9 && $(this).find("td:eq(9)").html() != 8 && $(this).find("td:eq(9)").html() != 3 && $(this).find("td:eq(9)").html() != 4 && $(this).find("td:eq(11)").html() == 1) {
+
+                var codProd = $(this).find("td:eq(6)").html();
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+                    url: RutaURL('/Venta/VerificarStock'),
+                    success: function (data) {
+                        Stock = data.data;
+                    }
+                });
+                if (Stock < parseFloat($(this).find("td:eq(3)").html())) {
+                    if (producto.length > 1) {
+                        producto = producto + "," + codProd;
+                    } else {
+                        producto = codProd;
+                    }
+                }
+            }
+
+
+            // obligatorios
+
+            if ($(this).find("td:eq(11)").html() == 1) {
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProdPrincipal: $(this).find("td:eq(6)").html(), codAlmacen, cantidad: parseFloat($(this).find("td:eq(3)").html()) }, async: false,
+                    url: RutaURL('/Venta/StockProductoCompuesto'),
+                    success: function (data) {
+                        $.each(data, function () {
+
+                            if (producto.length > 1) {
+                                producto = producto + "," + this.Cod_ProdComp;
+                            } else {
+                                producto = this.Cod_ProdComp;
+                            }
+                            producto = producto.toString();
+                        })
+                    }
+                });
+
+            }
+
+
+        });
+
+
+
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+
+            var Stock = 0;
+
+            if ($(this).find("td:eq(19)").html() != 3 && $(this).find("td:eq(19)").html() != 4) {
+
+                var codProd = $(this).find("td:eq(9)").html();
+                var cantidadReal = 0;
+
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProd, codAlmacen }, async: false,
+                    url: RutaURL('/Venta/VerificarStock'),
+                    success: function (data) {
+                        Stock = data.data;
+                    }
+                });
+
+                var objeto;
+
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                    if (codProd == $(this).find("td:eq(9)").html()) {
+                        cantidadReal += parseFloat($(this).find("td:eq(4)").html());
+                    }
+                });
+
+                ////////////////////
+                var cant = 0;
+                var ArrayComposicion = [];
+                
+                $("#tbcomposicion").find("tbody").find("tr").each(function () {
+                    cant = parseFloat($(this).find("td:eq(4)").html()) * parseFloat($(this).find("td:eq(10)").html());
+                    objeto = {
+                        CodProdComp: $(this).find("td:eq(9)").html(), Cantidad: cant
+                    };
+                    ArrayComposicion.push(objeto);
+
+                    if (codProd == $(this).find("td:eq(9)").html()) {
+                        $.ajax({
+                            type: "POST", dataType: 'json', data: { codProdPrincipal: $(this).find("td:eq(9)").html() }, async: false,
+                            url: RutaURL('/Venta/StockProductoCompuesto'),
+                            success: function (data) {
+                                $.each(data, function () {
+                                    objeto = {
+                                        CodProdComp: this.codProdComp, Cantidad: this.porcion
+                                    };
+                                    ArrayComposicion.push(objeto);
+                                })
+                            }
+                        });
+                    }
+
+                });
+
+                ///////////////////////
+
+                if (Stock < parseFloat(cantidadReal) * parseFloat($(this).find("td:eq(15)").html()) * parseFloat($(this).find("td:eq(17)").html())) {
+                    if (producto.length > 1) {
+                        producto = producto + "," + codProd;
+                    } else {
+                        producto = codProd;
+                    }
+                }
+
+            }
+
+        });
+
+
+
+
+        if (producto.length > 0) {
+
+            $.ajax({
+                type: "POST", dataType: 'json', data: { producto }, async: false,
+                url: RutaURL('/Venta/ObtenerProducto'),
+                success: function (data) {
+                    swal("", "NO EXISTE CANTIDAD SUFICIENTE DEL PRODUCTO " + data.dato, "warning");
+                    EstadoConfimar = false;
+                }
+            });
+
+        }
+
+
+        var codMesa = $("#CodMesa").val();
+        $.ajax({
+            type: "POST", dataType: 'json', data: { codMesa, usuario: $("#usuario").val() }, async: false,
+            url: RutaURL('/DetalleMesa/EstadoMesa'),
+            success: function (data) {
+                if (data.data > 0) {
+                    swal("", "La mesa ya está en uso.", "warning");
+                    EstadoConfimar = false;
+                }
+            }
+        });
+
+
+        var tabla = $('#tbproducto').DataTable();
+        if (!tabla.data().any()) {
+            swal("", "Debe agregar producto.", "warning");
+            EstadoConfimar = false;
+        }
+
+
+    }
+
+    function CalcularComposicion() {
+
+        var cant = 0, codProdAnterior = 0, NroProdAnterior=0;
+        var ArrayComposicion = [];
+
+        $("#tbcomposicion").find("tbody").find("tr").each(function () {
+           
+            var codProd = $(this).find("td:eq(9)").html();
+            var NroProd = $(this).find("td:eq(6)").html();
+
+            cant = parseFloat($(this).find("td:eq(4)").html()) * parseFloat($(this).find("td:eq(10)").html());
+            objeto = {
+                CodProdComp: $(this).find("td:eq(9)").html(), Cantidad: cant, opcional:1
+            };
+            ArrayComposicion.push(objeto);
+
+            if (NroProd != NroProdAnterior) {
+                $.ajax({
+                    type: "POST", dataType: 'json', data: { codProdComp: $(this).find("td:eq(9)").html() }, async: false,
+                    url: RutaURL('/Venta/ObtenerDatoCompuesto'),
+                    success: function (data) {
+                        $.each(data, function () {
+                            objeto = {
+                                CodProdComp: this.codProdComp, Cantidad: parseFloat(this.porcion) * parseFloat($(this).find("td:eq(10)").html()), opcional: 0
+                            };
+                            ArrayComposicion.push(objeto);
+                        })
+                    }
+                });
+            }
+
+            //$("#tbcomposicion").find("tbody").find("tr").each(function () {
+            //    if (codProd == $(this).find("td:eq(9)").html()) {
+            //        estado += 1;
+            //        if (estado==1) {
+            //            $.ajax({
+            //                type: "POST", dataType: 'json', data: { codProdPrincipal: $(this).find("td:eq(9)").html() }, async: false,
+            //                url: RutaURL('/Venta/ObtenerDatoCompuesto'),
+            //                success: function (data) {
+            //                    $.each(data, function () {
+            //                        objeto = {
+            //                            CodProdComp: this.codProdComp, Cantidad: parseFloat(this.porcion) * parseFloat($(this).find("td:eq(10)").html()), opcional: 0
+            //                        };
+            //                        ArrayComposicion.push(objeto);
+            //                    })
+            //                }
+            //            });
+            //        }           
+            //    }
+            //});
+
+            NroProdAnterior = $(this).find("td:eq(6)").html();  
+
+        });
+
+        $.ajax({
+            type: "POST", data: JSON.stringify({ DatoComposicion: ArrayComposicion }), dataType: 'JSON', cache: false, contentType: "application/json",
+            url: RutaURL('/Venta/CalcularStockComposicion'),
+            success: function (data) {
+                    
+            }
+        });
+
+    }
+
+</script>
