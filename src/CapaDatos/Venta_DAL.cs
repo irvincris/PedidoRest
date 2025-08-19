@@ -1664,9 +1664,6 @@ namespace CapaDatos
             var BDRestaurant = ConfigurationManager.AppSettings["restaurant"];
             using (var context = new SqlConnection(BDRestaurant))
             {
-                //string consulta = "select v.cod_prod CodProd,v.Nombre as NombreProducto,v.Cantidad,v.Precio,(v.Cantidad*v.Precio)Subtotal,v.cod_unid TipoUnid,v.tip_clas TipClas,m.cod_mesa,v.Cod_Decv,m.descripcion descripcionMesa,v.observaciones observacion from vi_ventaDetalle v inner join mesa m on v.cod_vent=m.cod_vent" +
-                //    " where v.cod_prod>0 and v.cod_vent=" + codVenta + " order by v.cod_decv";
-
                 string consulta = "select v.cod_prod CodProd,v.Nombre as NombreProducto,v.Cantidad,v.Precio,(v.Cantidad*v.Precio)Subtotal,v.cod_unid TipoUnid,v.tip_clas TipClas,v.Cod_Decv,v.observaciones observacion,v.codUsuaDetalle from vi_ventaDetalle v " +
                 " where v.cod_prod>0 and v.cod_vent=" + codVenta + " order by v.cod_decv";
 
